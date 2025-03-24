@@ -7,7 +7,7 @@ def predict_price(features):
         model, poly = pickle.load(f)
 
     # Biến đổi đặc trưng đầu vào
-    features_poly = poly.transform(np.array(features))
+    features_poly = poly.transform(np.array(features).reshape(1, -1))  # Ensure input shape matches
 
     # Dự đoán giá
     return model.predict(features_poly)

@@ -15,7 +15,7 @@ def train_model():
         port="5432"
     )
     query = """
-        SELECT "Area", "Bedrooms", "Bathrooms", "Price"::double precision
+        SELECT "Area", "Bedrooms", "Bathrooms", "Floors", "Width_meters", "Price"::double precision
         FROM house_prices
         WHERE "Price" ~ '^[0-9]+(\.[0-9]+)?$';
     """
@@ -23,7 +23,7 @@ def train_model():
     conn.close()
 
     # Chuẩn bị dữ liệu
-    X = data[["Area", "Bedrooms", "Bathrooms"]].values  # Các cột đặc trưng
+    X = data[["Area", "Bedrooms", "Bathrooms", "Floors", "Width_meters"]].values  # Các cột đặc trưng
     y = data["Price"].values  # Cột mục tiêu
 
     # Tạo đặc trưng đa thức
