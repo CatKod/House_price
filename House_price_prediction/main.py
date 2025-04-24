@@ -1,15 +1,13 @@
-from models.model_training import train_model
-from models.predict import predict_price
-from models.model_evaluation import evaluate_model
+import models.predict_house_price
 
 def main(features):
     # Huấn luyện mô hình
-    train_model()  # Sử dụng bảng SQL
+    models.predict_house_price.train_model()  # Sử dụng bảng SQL
 
     # Dự đoán giá nhà
-    prediction = predict_price(features)
-    prediction_in_billion = prediction / 1e9  # Chuyển đổi sang đơn vị tỷ
-    print(f"Predicted price: {prediction_in_billion} VND")
+    features = [240, 3, 2, 1, 10]
+    prediction = models.predict_house_price.predict_price(features)
+    print(f"Predicted price: {prediction} VND")
 
     # Đánh giá mô hình
-    evaluate_model()  # Sử dụng bảng SQL
+    models.predict_house_price.evaluate_model('house_prices')  # Sử dụng bảng SQL
