@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{{ property.title if property else house_prices['Title'] if house_prices else 'Chi tiết nhà' }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ property.title if property else house_prices['Title'] if house_prices else 'Chi tiết nhà' }}</h4>
+                {% if session.get('user_id') %}
+                <form action="{{ url_for('add_favorite', house_id=property.house_id if property else house_prices['house_id']) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-outline-light">
+                        <i class="fas fa-heart"></i> Yêu thích
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Thông tin cơ bản</h5>
+                        <table class="table">
+                            {% if property %}
+                            <tr><th>ID:</th><td>{{ property.house_id }}</td></tr>
+                            <tr><th>Quận/Huyện:</th><td>{{ property.district }}</td></tr>
+                            <tr><th>Giá:</th><td>{{ property.price }}</td></tr>
+                            <tr><th>Diện tích:</th><td>{{ property.area }} m²</td></tr>
+                            <tr><th>Phòng ngủ:</th><td>{{ property.bedrooms }}</td></tr>
+                            <tr><th>Phòng tắm:</th><td>{{ property.bathrooms }}</td></tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        {% if house_prices %}
+                        <h5>Thông tin chi tiết (house_prices)</h5>
+                        <table class="table table-bordered table-sm">
+                            {% for key, value in house_prices.items() %}
+                            <tr>
+                                <th>{{ key }}</th>
+                                <td>{{ value }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if property.description %}
+                <div class="mb-4">
+                    <h5>Mô tả</h5>
+                    <p>{{ property.description }}</p>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Quay lại
+                    </a>
+                    {% if session.get('user_id') %}
+                    <a href="{{ url_for('compare') }}?house_id1={{ property.house_id if property else house_prices['house_id'] }}" class="btn btn-primary">
+                        <i class="fas fa-exchange-alt"></i> So sánh
+                    </a>
+                    {% endif %}
+                </div>
+                {% if session.get('is_admin') %}
+                <div class="mt-3">
+                    <a href="{{ url_for('update_status', house_id=property.house_id if property else house_prices['house_id']) }}" class="btn btn-warning">Cập nhật trạng thái</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">Thông tin liên hệ</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <i class="fas fa-phone me-2"></i>
+                    <a href="tel:0123456789">0123456789</a>
+                </p>
+                <p class="mb-2">
+                    <i class="fas fa-envelope me-2"></i>
+                    <a href="mailto:contact@example.com">contact@example.com</a>
+                </p>
+                <button class="btn btn-success w-100">
+                    <i class="fas fa-comment me-2"></i>
+                    Liên hệ ngay
+                </button>
+            </div>
+        </div>
+
+        {% if similar_properties %}
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">Bất động sản tương tự</h5>
+            </div>
+            <div class="card-body">
+                {% for similar in similar_properties %}
+                <div class="mb-3">
+                    <h6>
+                        <a href="{{ url_for('property_details', house_id=similar.house_id) }}">
+                            {{ similar.title }}
+                        </a>
+                    </h6>
+                    <p class="small text-muted mb-1">{{ similar.district }}</p>
+                    <p class="small text-primary mb-0">{{ similar.price }} tỷ</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

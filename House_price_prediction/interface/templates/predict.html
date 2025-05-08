@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Dự đoán giá{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Dự đoán giá bất động sản</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('predict') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="area" class="form-label">Diện tích (m²)</label>
+                            <input type="number" class="form-control" id="area" name="area" step="0.01" min="0" required
+                                value="{{ area if area else '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="bedrooms" class="form-label">Số phòng ngủ</label>
+                            <input type="number" class="form-control" id="bedrooms" name="bedrooms" min="0" required
+                                value="{{ bedrooms if bedrooms else '' }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="bathrooms" class="form-label">Số phòng tắm</label>
+                            <input type="number" class="form-control" id="bathrooms" name="bathrooms" min="0" required
+                                value="{{ bathrooms if bathrooms else '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="floors" class="form-label">Số tầng</label>
+                            <input type="number" class="form-control" id="floors" name="floors" min="1" required
+                                value="{{ floors if floors else '' }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="width_meters" class="form-label">Chiều rộng (m)</label>
+                        <input type="number" class="form-control" id="width_meters" name="width_meters" step="0.01" min="0" required
+                            value="{{ width_meters if width_meters else '' }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-calculator me-2"></i>Dự đoán giá
+                    </button>
+                </form>
+
+                {% if prediction %}
+                <div class="mt-4">
+                    <div class="alert alert-success">
+                        <h5 class="alert-heading">Kết quả dự đoán</h5>
+                        <p class="mb-0">Giá dự đoán: <strong>{{ prediction }} VND</strong></p>
+                    </div>
+                    <div class="card mt-3">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">Thông tin đầu vào</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered mb-0">
+                                <tr>
+                                    <th>Diện tích:</th>
+                                    <td>{{ area }} m²</td>
+                                </tr>
+                                <tr>
+                                    <th>Phòng ngủ:</th>
+                                    <td>{{ bedrooms }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Phòng tắm:</th>
+                                    <td>{{ bathrooms }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Số tầng:</th>
+                                    <td>{{ floors }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Chiều rộng:</th>
+                                    <td>{{ width_meters }} m</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

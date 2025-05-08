@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Cập nhật trạng thái{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">Cập nhật trạng thái căn nhà</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="statue" class="form-label">Trạng thái mới</label>
+                        <select class="form-select" id="statue" name="statue">
+                            <option value="Đang bán" {% if current_status == 'Đang bán' %}selected{% endif %}>Đang bán</option>
+                            <option value="Đã bán" {% if current_status == 'Đã bán' %}selected{% endif %}>Đã bán</option>
+                            <option value="Đang xử lý" {% if current_status == 'Đang xử lý' %}selected{% endif %}>Đang xử lý</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">Cập nhật</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

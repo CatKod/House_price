@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Bất động sản yêu thích{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Bất động sản yêu thích</h1>
+    </div>
+</div>
+
+<div class="row">
+    {% if properties %}
+        {% for property in properties %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ property.title }}</h5>
+                    <p class="card-text">
+                        <strong>ID:</strong> {{ property.house_id }}<br>
+                        <strong>Quận/Huyện:</strong> {{ property.district }}<br>
+                        <strong>Giá:</strong> {{ property.price }} tỷ<br>
+                        <strong>Diện tích:</strong> {{ property.area }} m²<br>
+                        <strong>Phòng ngủ:</strong> {{ property.bedrooms }}<br>
+                        <strong>Phòng tắm:</strong> {{ property.bathrooms }}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('property_details', house_id=property.house_id) }}" class="btn btn-primary">
+                            <i class="fas fa-info-circle me-2"></i>Chi tiết
+                        </a>
+                        <form action="{{ url_for('remove_favorite', house_id=property.house_id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-heart-broken me-2"></i>Xóa
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>Bạn chưa có bất động sản yêu thích nào.
+                <a href="{{ url_for('index') }}" class="alert-link">Khám phá ngay</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 
