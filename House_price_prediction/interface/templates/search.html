@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Tìm kiếm{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Tìm kiếm Bất Động Sản</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Bộ lọc tìm kiếm</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('search') }}" method="GET">
+                    <div class="mb-3">
+                        <label for="q" class="form-label">Từ khóa</label>
+                        <input type="text" class="form-control" id="q" name="q" value="{{ search_term }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="district" class="form-label">Quận/Huyện</label>
+                        <select class="form-select" id="district" name="district">
+                            <option value="">Tất cả</option>
+                            <option value="Ba Đình">Ba Đình</option>
+                            <option value="Cầu Giấy">Cầu Giấy</option>
+                            <option value="Hoàn Kiếm">Hoàn Kiếm</option>
+                            <option value="Hai Bà Trưng">Hai Bà Trưng</option>
+                            <option value="Hoàng Mai">Hoàng Mai</option>
+                            <option value="Đống Đa">Đống Đa</option>
+                            <option value="Hà Đông">Hà Đông</option>
+                            <option value="Tây Hồ">Tây Hồ</option>
+                            <option value="Long Biên">Long Biên</option>
+                            {% for district in districts %}
+                            <option value="{{ district }}" {% if district == selected_district %}selected{% endif %}>
+                                {{ district }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Khoảng giá (tỷ)</label>
+                        <div class="row">
+                            <div class="col">
+                                <input type="number" class="form-control" name="price_min" placeholder="Từ" step="0.1" min="0">
+                            </div>
+                            <div class="col">
+                                <input type="number" class="form-control" name="price_max" placeholder="Đến" step="0.1" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Diện tích (m²)</label>
+                        <div class="row">
+                            <div class="col">
+                                <input type="number" class="form-control" name="area_min" placeholder="Từ" min="0">
+                            </div>
+                            <div class="col">
+                                <input type="number" class="form-control" name="area_max" placeholder="Đến" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bedrooms" class="form-label">Số phòng ngủ</label>
+                        <select class="form-select" id="bedrooms" name="bedrooms">
+                            <option value="">Tất cả</option>
+                            {% for i in range(1, 6) %}
+                            <option value="{{ i }}">{{ i }}+</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Tìm kiếm
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        {% if properties %}
+            <div class="alert alert-info">
+                Tìm thấy {{ total_properties }} kết quả cho "{{ search_term }}"
+            </div>
+
+            <div class="row">
+                {% for property in properties %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ property.title }}</h5>
+                            <p class="card-text">
+                                <strong>ID:</strong> {{ property.house_id }}<br>
+                                <strong>Quận/Huyện:</strong> {{ property.district }}<br>
+                                <strong>Giá:</strong> {{ property.price }}<br>
+                                <strong>Diện tích:</strong> {{ property.area }} m²<br>
+                                <strong>Phòng ngủ:</strong> {{ property.bedrooms }}<br>
+                                <strong>Phòng tắm:</strong> {{ property.bathrooms }}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('property_details', house_id=property.house_id) }}" class="btn btn-primary">
+                                    Xem chi tiết
+                                </a>
+                                {% if session.get('user_id') %}
+                                <form action="{{ url_for('add_favorite', house_id=property.house_id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        <i class="fas fa-heart"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if current_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('search', q=search_term, page=current_page-1, per_page=per_page) }}">
+                            Trước
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for i in range(1, total_pages + 1) %}
+                    <li class="page-item {% if i == current_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('search', q=search_term, page=i, per_page=per_page) }}">
+                            {{ i }}
+                        </a>
+                    </li>
+                    {% endfor %}
+
+                    {% if current_page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('search', q=search_term, page=current_page+1, per_page=per_page) }}">
+                            Sau
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% else %}
+            <div class="alert alert-info">Không tìm thấy kết quả nào cho "{{ search_term }}"</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

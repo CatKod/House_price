@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Trang chủ{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Danh Sách Bất Động Sản Đang Bán</h1>
+        <p>Tổng số bất động sản: {{ total_properties }}</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        {% if properties %}
+            <div class="row">
+                {% for property in properties %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ property.title }}</h5>
+                            <p class="card-text">
+                                <strong>ID:</strong> {{ property.house_id }}<br>
+                                <strong>Quận/Huyện:</strong> {{ property.district }}<br>
+                                <strong>Giá:</strong> {{ property.price }}{% if property.price != 'Thỏa thuận' and property.price != 'Thoả thuận' %}{% endif %}<br>
+                                <strong>Diện tích:</strong> {{ property.area }} m²<br>
+                                <strong>Phòng ngủ:</strong> {{ property.bedrooms }}<br>
+                                <strong>Phòng tắm:</strong> {{ property.bathrooms }}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('property_details', house_id=property.house_id) }}" class="btn btn-primary">Xem chi tiết</a>
+                                {% if session.get('user_id') %}
+                                <form action="{{ url_for('add_favorite', house_id=property.house_id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        <i class="fas fa-heart"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if current_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('index', page=current_page-1, per_page=per_page) }}">Trước</a>
+                    </li>
+                    {% endif %}
+
+                    {% for i in range(1, total_pages + 1) %}
+                    <li class="page-item {% if i == current_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('index', page=i, per_page=per_page) }}">{{ i }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if current_page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('index', page=current_page+1, per_page=per_page) }}">Sau</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% else %}
+            <div class="alert alert-info">Không có bất động sản nào đang bán.</div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <!-- District Statistics -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Thống kê theo Quận/Huyện</h5>
+            </div>
+            <div class="card-body">
+                {% for district in district_stats %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span>{{ district[0] }}</span>
+                    <span class="badge bg-primary">{{ district[1] }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Average Price Statistics -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">Giá Trung Bình theo Quận/Huyện</h5>
+            </div>
+            <div class="card-body">
+                {% for stat in avg_price_stats %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span>{{ stat[0] }}</span>
+                    <span class="badge bg-success">{{ "%.2f"|format(stat[1]|float / 1e9) }} tỷ</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

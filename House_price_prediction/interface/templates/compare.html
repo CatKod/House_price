@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}So sánh bất động sản{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>So sánh bất động sản</h1>
+    </div>
+</div>
+
+{% if not properties %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Chọn bất động sản để so sánh</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('compare') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="house_id1" class="form-label">Bất động sản thứ nhất</label>
+                            <input type="text" class="form-control" id="house_id1" name="house_id1" required
+                                value="{{ request.args.get('house_id1', '') }}"
+                                placeholder="Nhập ID bất động sản">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="house_id2" class="form-label">Bất động sản thứ hai</label>
+                            <input type="text" class="form-control" id="house_id2" name="house_id2" required
+                                placeholder="Nhập ID bất động sản">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-exchange-alt me-2"></i>So sánh
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Kết quả so sánh</h4>
+                    <a href="{{ url_for('compare') }}" class="btn btn-outline-light">
+                        <i class="fas fa-sync-alt me-2"></i>So sánh khác
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tiêu chí</th>
+                                <th class="text-center">Bất động sản 1</th>
+                                <th class="text-center">Bất động sản 2</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th>ID</th>
+                                <td class="text-center">{{ properties[0].house_id }}</td>
+                                <td class="text-center">{{ properties[1].house_id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Tiêu đề</th>
+                                <td class="text-center">{{ properties[0].title }}</td>
+                                <td class="text-center">{{ properties[1].title }}</td>
+                            </tr>
+                            <tr>
+                                <th>Quận/Huyện</th>
+                                <td class="text-center">{{ properties[0].district }}</td>
+                                <td class="text-center">{{ properties[1].district }}</td>
+                            </tr>
+                            <tr>
+                                <th>Giá</th>
+                                <td class="text-center">{{ properties[0].price }} tỷ</td>
+                                <td class="text-center">{{ properties[1].price }} tỷ</td>
+                            </tr>
+                            <tr>
+                                <th>Diện tích</th>
+                                <td class="text-center">{{ properties[0].area }} m²</td>
+                                <td class="text-center">{{ properties[1].area }} m²</td>
+                            </tr>
+                            <tr>
+                                <th>Phòng ngủ</th>
+                                <td class="text-center">{{ properties[0].bedrooms }}</td>
+                                <td class="text-center">{{ properties[1].bedrooms }}</td>
+                            </tr>
+                            <tr>
+                                <th>Phòng tắm</th>
+                                <td class="text-center">{{ properties[0].bathrooms }}</td>
+                                <td class="text-center">{{ properties[1].bathrooms }}</td>
+                            </tr>
+                            {% if properties[0].floors and properties[1].floors %}
+                            <tr>
+                                <th>Số tầng</th>
+                                <td class="text-center">{{ properties[0].floors }}</td>
+                                <td class="text-center">{{ properties[1].floors }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if properties[0].width_meters and properties[1].width_meters %}
+                            <tr>
+                                <th>Chiều rộng</th>
+                                <td class="text-center">{{ properties[0].width_meters }} m</td>
+                                <td class="text-center">{{ properties[1].width_meters }} m</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <a href="{{ url_for('property_details', house_id=properties[0].house_id) }}" class="btn btn-primary w-100">
+                            <i class="fas fa-info-circle me-2"></i>Chi tiết bất động sản 1
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('property_details', house_id=properties[1].house_id) }}" class="btn btn-primary w-100">
+                            <i class="fas fa-info-circle me-2"></i>Chi tiết bất động sản 2
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %} 

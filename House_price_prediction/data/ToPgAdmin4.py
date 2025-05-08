@@ -150,7 +150,8 @@ def create_property_tables(engine):
         if 'cur' in locals():
             cur.close()
         if 'conn' in locals():
-            conn.close()
+            conn.close() # Get connection from engine
+
 
 # Load the CSV file
 csv_file = os.path.join(os.path.dirname(__file__), "HN_Houseprice.csv")
