@@ -8,7 +8,7 @@ from functools import wraps
 from decimal import Decimal, InvalidOperation
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Change this to a secure secret key
+app.secret_key = 'cat_and_code'
 
 # Database connection configuration
 DB_CONFIG = {
