@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Đặt cọc bất động sản{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card mt-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Đặt cọc bất động sản</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <p>Bạn có chắc chắn muốn đặt cọc cho bất động sản có mã <strong>{{ house_id }}</strong>?</p>
+                    <button type="submit" class="btn btn-success">Đặt cọc</button>
+                    <a href="{{ url_for('property_details', house_id=house_id) }}" class="btn btn-secondary">Hủy</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

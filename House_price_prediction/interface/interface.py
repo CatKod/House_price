@@ -229,6 +229,12 @@ def property_details(house_id):
 def search():
     try:
         search_term = request.args.get('q', '')
+        district = request.args.get('district', '')
+        price_min = request.args.get('price_min', '')
+        price_max = request.args.get('price_max', '')
+        area_min = request.args.get('area_min', '')
+        area_max = request.args.get('area_max', '')
+        bedrooms = request.args.get('bedrooms', '')
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         offset = (page - 1) * per_page
@@ -236,22 +242,50 @@ def search():
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Get total count of search results
-        cur.execute("""
-            SELECT COUNT(*) FROM public.property
-            WHERE title ILIKE %s OR district ILIKE %s OR house_id ILIKE %s
-        """, (f'%{search_term}%', f'%{search_term}%', f'%{search_term}%'))
+        # Build dynamic WHERE clause
+        where_clauses = []
+        params = []
+        if search_term:
+            where_clauses.append('(title ILIKE %s OR district ILIKE %s OR house_id ILIKE %s)')
+            params.extend([f'%{search_term}%'] * 3)
+        if district:
+            where_clauses.append('district = %s')
+            params.append(district)
+        if price_min:
+            where_clauses.append("price ~ '^[0-9]+(\\.[0-9]+)?$' AND price::numeric >= %s")
+            params.append(float(price_min) * 1e9)
+        if price_max:
+            where_clauses.append("price ~ '^[0-9]+(\\.[0-9]+)?$' AND price::numeric <= %s")
+            params.append(float(price_max) * 1e9)
+        if area_min:
+            where_clauses.append('area >= %s')
+            params.append(float(area_min))
+        if area_max:
+            where_clauses.append('area <= %s')
+            params.append(float(area_max))
+        if bedrooms:
+            where_clauses.append('bedrooms >= %s')
+            params.append(int(bedrooms))
+
+        where_sql = ' AND '.join(where_clauses)
+        if where_sql:
+            where_sql = 'WHERE ' + where_sql
+
+        # Get total count
+        count_sql = f"SELECT COUNT(*) FROM public.property {where_sql}"
+        cur.execute(count_sql, params)
         total_properties = cur.fetchone()[0]
         total_pages = (total_properties + per_page - 1) // per_page
 
         # Get search results
-        cur.execute("""
+        search_sql = f"""
             SELECT house_id, title, district, price, area, bedrooms, bathrooms
             FROM public.property
-            WHERE title ILIKE %s OR district ILIKE %s OR house_id ILIKE %s
+            {where_sql}
             ORDER BY house_id
             LIMIT %s OFFSET %s
-        """, (f'%{search_term}%', f'%{search_term}%', f'%{search_term}%', per_page, offset))
+        """
+        cur.execute(search_sql, params + [per_page, offset])
         properties = cur.fetchall()
 
         # Format properties
@@ -267,6 +301,10 @@ def search():
                 'bathrooms': prop[6]
             })
 
+        # Lấy danh sách quận/huyện cho dropdown
+        cur.execute('SELECT DISTINCT district FROM public.property ORDER BY district')
+        districts = [row[0] for row in cur.fetchall()]
+
         cur.close()
         conn.close()
 
@@ -276,7 +314,9 @@ def search():
                              current_page=page,
                              total_pages=total_pages,
                              total_properties=total_properties,
-                             per_page=per_page)
+                             per_page=per_page,
+                             districts=districts,
+                             selected_district=district)
 
     except Exception as e:
         flash(f'Error: {str(e)}', 'error')
@@ -514,6 +554,163 @@ def update_status(house_id):
     except Exception as e:
         flash(f'Lỗi: {str(e)}', 'error')
         return redirect(url_for('property_details', house_id=house_id))
+
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT user_id, username, phone FROM public.users ORDER BY user_id")
+        users = cur.fetchall()
+        cur.close()
+        conn.close()
+        return render_template('admin_users.html', users=users)
+    except Exception as e:
+        flash(f'Lỗi: {str(e)}', 'error')
+        return render_template('error.html', message='Không thể tải danh sách người dùng')
+
+@app.route('/admin/delete_user/<user_id>', methods=['POST'])
+@admin_required
+def admin_delete_user(user_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Xóa user khỏi bảng users
+        cur.execute("DELETE FROM public.users WHERE user_id = %s", (user_id,))
+        # Xóa các bản ghi liên quan: favorite, deposit (nếu có)
+        cur.execute("DELETE FROM public.favorite WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM public.deposit WHERE user_id = %s", (user_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        flash('Đã xóa user thành công.', 'success')
+        return redirect(url_for('admin_users'))
+    except Exception as e:
+        flash(f'Lỗi: {str(e)}', 'error')
+        return redirect(url_for('admin_users'))
+
+@app.route('/deposit/<house_id>', methods=['GET', 'POST'])
+@login_required
+def deposit(house_id):
+    if request.method == 'POST':
+        # Đặt cọc, chuyển sang trang xác nhận
+        return redirect(url_for('confirm_deposit', house_id=house_id))
+    return render_template('deposit.html', house_id=house_id)
+
+@app.route('/confirm_deposit/<house_id>', methods=['GET', 'POST'])
+@login_required
+def confirm_deposit(house_id):
+    if request.method == 'POST':
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            # Cập nhật trạng thái nhà sang "Đang xử lý"
+            cur.execute("""
+                UPDATE public.statues
+                SET statue = %s
+                WHERE house_id = %s
+            """, ('Đang xử lý', house_id))
+            # Thêm vào bảng deposit
+            cur.execute("""
+                INSERT INTO public.deposit (user_id, house_id)
+                VALUES (%s, %s)
+            """, (session['user_id'], house_id))
+            conn.commit()
+            cur.close()
+            conn.close()
+            flash('Đặt cọc thành công! Trạng thái nhà đã chuyển sang Đang xử lý.', 'success')
+            return redirect(url_for('property_details', house_id=house_id))
+        except Exception as e:
+            flash(f'Lỗi: {str(e)}', 'error')
+            return redirect(url_for('property_details', house_id=house_id))
+    return render_template('confirm_deposit.html', house_id=house_id)
+
+@app.route('/my_deposits')
+@login_required
+def my_deposits():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Lấy danh sách các nhà mà user này đã đặt cọc (statue = 'Đang xử lý' và user_id là người đặt cọc)
+        cur.execute("""
+            SELECT p.house_id, p.title, p.district, p.price, p.area, p.bedrooms, p.bathrooms
+            FROM public.property p
+            JOIN public.statues s ON p.house_id = s.house_id
+            JOIN public.deposit d ON p.house_id = d.house_id
+            WHERE s.statue = 'Đang xử lý' AND d.user_id = %s
+            ORDER BY p.house_id
+        """, (session['user_id'],))
+        properties = cur.fetchall()
+        cur.close()
+        conn.close()
+        return render_template('my_deposits.html', properties=properties)
+    except Exception as e:
+        flash(f'Lỗi: {str(e)}', 'error')
+        return render_template('error.html', message='Không thể tải danh sách đặt cọc')
+
+@app.route('/admin/processing')
+@admin_required
+def admin_processing():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Lấy tất cả nhà đang xử lý
+        cur.execute("""
+            SELECT p.house_id, p.title, p.district, p.price, p.area, p.bedrooms, p.bathrooms, d.user_id
+            FROM public.property p
+            JOIN public.statues s ON p.house_id = s.house_id
+            JOIN public.deposit d ON p.house_id = d.house_id
+            WHERE s.statue = 'Đang xử lý'
+            ORDER BY p.house_id
+        """)
+        properties = cur.fetchall()
+        cur.close()
+        conn.close()
+        return render_template('admin_processing.html', properties=properties)
+    except Exception as e:
+        flash(f'Lỗi: {str(e)}', 'error')
+        return render_template('error.html', message='Không thể tải danh sách bất động sản đang xử lý')
+
+@app.route('/cancel_deposit/<house_id>', methods=['POST'])
+@login_required
+def cancel_deposit(house_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Xóa bản ghi đặt cọc của user này cho nhà này
+        cur.execute("DELETE FROM public.deposit WHERE user_id = %s AND house_id = %s", (session['user_id'], house_id))
+        # Nếu không còn ai đặt cọc thì chuyển statue về 'Đang bán'
+        cur.execute("SELECT COUNT(*) FROM public.deposit WHERE house_id = %s", (house_id,))
+        if cur.fetchone()[0] == 0:
+            cur.execute("UPDATE public.statues SET statue = 'Đang bán' WHERE house_id = %s", (house_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        flash('Đã hủy đặt cọc thành công.', 'success')
+        return redirect(url_for('my_deposits'))
+    except Exception as e:
+        flash(f'Lỗi: {str(e)}', 'error')
+        return redirect(url_for('my_deposits'))
+
+@app.route('/admin/cancel_processing/<house_id>', methods=['POST'])
+@admin_required
+def admin_cancel_processing(house_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Xóa tất cả bản ghi đặt cọc cho nhà này
+        cur.execute("DELETE FROM public.deposit WHERE house_id = %s", (house_id,))
+        # Chuyển statue về 'Đang bán'
+        cur.execute("UPDATE public.statues SET statue = 'Đang bán' WHERE house_id = %s", (house_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        flash('Đã hủy xử lý bất động sản thành công.', 'success')
+        return redirect(url_for('admin_processing'))
+    except Exception as e:
+        flash(f'Lỗi: {str(e)}', 'error')
+        return redirect(url_for('admin_processing'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
