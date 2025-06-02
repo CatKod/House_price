@@ -68,6 +68,19 @@
                     <a href="{{ url_for('update_status', house_id=property.house_id if property else house_prices['house_id']) }}" class="btn btn-warning">Cập nhật trạng thái</a>
                 </div>
                 {% endif %}
+                <div class="mt-3">
+                    <a href="{{ url_for('property_details', house_id=property.house_id) }}" class="btn btn-primary">Xem chi tiết</a>
+                    {% if not session.get('is_admin', False) %}
+                    <a href="{{ url_for('deposit', house_id=property.house_id) }}" class="btn btn-warning ms-2">Đặt cọc</a>
+                    {% endif %}
+                    {% if session.get('user_id') %}
+                    <form action="{{ url_for('add_favorite', house_id=property.house_id) }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger" title="Yêu thích">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -115,4 +128,4 @@
         {% endif %}
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
