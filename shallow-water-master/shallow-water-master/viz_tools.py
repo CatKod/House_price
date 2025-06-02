@@ -42,6 +42,7 @@ def eta_animation(X, Y, eta_list, frame_interval, filename = "eta_animation"):
         extra_args=["-pix_fmt", "yuv420p"]
     )
     anim.save(f"{filename}.mp4", writer=mpeg_writer)
+    plt.close(fig)
     return anim
 
 

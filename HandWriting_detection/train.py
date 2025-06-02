@@ -11,15 +11,14 @@ def create_model():
         Compiled Keras model
     """
     model = keras.Sequential([
-        tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+        tf.keras.layers.Conv2D(128, (3, 3), activation='relu', input_shape=(28, 28, 1)),
         tf.keras.layers.MaxPooling2D((2, 2)),
         tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
         tf.keras.layers.MaxPooling2D((2, 2)),
         tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
         tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(64, activation='relu'),
-        tf.keras.layers.Dense(10, activation='softmax')
-    ])
+        tf.keras.layers.Dense(10, activation='softmax')    ])
     
     model.compile(optimizer='adam',
                  loss='sparse_categorical_crossentropy',
@@ -63,9 +62,7 @@ def train_model():
 
 if __name__ == '__main__':
     # Train the model
-    model, history = train_model()
-    
-    # Print final metrics
-    print("/nTraining completed!")
+    model, history = train_model()    # Print final metrics
+    print("\nTraining completed!")
     print(f"Final training accuracy: {history.history['accuracy'][-1]:.4f}")
     print(f"Final validation accuracy: {history.history['val_accuracy'][-1]:.4f}")

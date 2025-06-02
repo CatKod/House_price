@@ -27,20 +27,34 @@ def predict():
     try:
         # Get image data from request
         image_data = request.json['image']
-        
-        # Decode base64 image
+          # Decode base64 image
         encoded_data = image_data.split(',')[1]
         nparr = np.frombuffer(base64.b64decode(encoded_data), np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
-        
-        # Preprocess image
+
+        # Debug: Save original image before processing
+        cv2.imwrite('C:/Users/kimvi/OneDrive - Hanoi University of Science and Technology/GitHub/My_AI_Project/HandWriting_detection/image/debug_original_image.png', image)
+        print(f"Original image shape: {image.shape}")
+        print(f"Original image min/max: {image.min()}/{image.max()}")
+
         processed_image = preprocess_image(image)
+        
+        # Debug: Save processed image to see what the model is receiving
+        debug_image = (processed_image[0, :, :, 0] * 255).astype(np.uint8)
+        cv2.imwrite('C:/Users/kimvi/OneDrive - Hanoi University of Science and Technology/GitHub/My_AI_Project/HandWriting_detection/image/debug_processed_image.png', debug_image)
+        print(f"Processed image shape: {processed_image.shape}")
+        print(f"Processed image min/max: {processed_image.min():.3f}/{processed_image.max():.3f}")
         
         # Make prediction
         if model is not None:
             prediction = model.predict(processed_image)
-            predicted_digit = np.argmax(prediction[0])
-            confidence = float(prediction[0][predicted_digit])
+            predicted_digit = np.argmax(prediction, axis=1)[0]  # Get the actual digit value
+            confidence = float(prediction[0][predicted_digit])  # Use the digit as index
+            
+            # Debug information (you can remove this later)
+            print(f"Prediction probabilities: {prediction}")
+            print(f"Predicted digit: {predicted_digit}")
+            print(f"Confidence: {confidence:.4f}")
             
             return jsonify({
                 'success': True,

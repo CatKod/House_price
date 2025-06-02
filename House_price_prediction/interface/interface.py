@@ -413,7 +413,8 @@ def favorites():
         cur.execute("""
             SELECT p.* FROM public.property p
             JOIN public.favorite f ON p.house_id = f.house_id
-            WHERE f.user_id = %s
+            JOIN public.statues s ON p.house_id = s.house_id
+            WHERE f.user_id = %s AND s.statue = 'Đang bán'
             ORDER BY p.house_id
         """, (session['user_id'],))
         properties = cur.fetchall()
