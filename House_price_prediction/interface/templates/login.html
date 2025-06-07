@@ -3,29 +3,340 @@
 {% block title %}Đăng nhập{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Đăng nhập</h4>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('login') }}">
-                    <div class="mb-3">
-                        <label for="user_id" class="form-label">ID người dùng</label>
-                        <input type="text" class="form-control" id="user_id" name="user_id" required>
+<style>
+    .auth-container {
+        min-height: calc(100vh - 200px);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 60px 0;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .auth-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="60" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="30" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="90" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        opacity: 0.3;
+        animation: float 20s infinite linear;
+    }
+    
+    @keyframes float {
+        0% { transform: translateY(0) rotate(0deg); }
+        100% { transform: translateY(-100px) rotate(360deg); }
+    }
+    
+    .auth-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: none;
+        border-radius: 24px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .auth-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 35px 60px rgba(0, 0, 0, 0.2);
+    }
+    
+    .auth-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 30px 30px;
+        text-align: center;
+        position: relative;
+    }
+    
+    .auth-header::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 0 0 50% 50%;
+    }
+    
+    .auth-header h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .auth-header p {
+        margin: 10px 0 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .auth-body {
+        padding: 50px 40px 40px;
+    }
+    
+    .form-floating {
+        margin-bottom: 25px;
+        position: relative;
+    }
+    
+    .form-floating .form-control {
+        height: 60px;
+        border: 2px solid #e3e6f0;
+        border-radius: 16px;
+        font-size: 1rem;
+        padding: 20px 20px 8px;
+        background: rgba(248, 249, 252, 0.8);
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        background: white;
+        transform: translateY(-2px);
+    }
+    
+    .form-floating label {
+        padding: 20px 20px 8px;
+        color: #6c757d;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating .form-control:focus ~ label,
+    .form-floating .form-control:not(:placeholder-shown) ~ label {
+        color: #667eea;
+        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+    }
+    
+    .input-icon {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        z-index: 5;
+        transition: color 0.3s ease;
+    }
+    
+    .form-floating .form-control:focus ~ .input-icon {
+        color: #667eea;
+    }
+    
+    .btn-login {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 16px;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+        padding: 16px 32px;
+        width: 100%;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+    
+    .btn-login::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .btn-login:hover::before {
+        left: 100%;
+    }
+    
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-register {
+        background: transparent;
+        border: 2px solid #667eea;
+        color: #667eea;
+        border-radius: 16px;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 14px 32px;
+        width: 100%;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: block;
+        text-align: center;
+    }
+    
+    .btn-register:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        text-decoration: none;
+    }
+    
+    .divider {
+        display: flex;
+        align-items: center;
+        margin: 30px 0;
+        color: #6c757d;
+    }
+    
+    .divider::before,
+    .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e3e6f0;
+    }
+    
+    .divider span {
+        padding: 0 20px;
+        font-weight: 500;
+    }
+    
+    .password-toggle {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        z-index: 5;
+        transition: color 0.3s ease;
+    }
+    
+    .password-toggle:hover {
+        color: #667eea;
+    }
+    
+    .form-floating .form-control:focus ~ .password-toggle {
+        color: #667eea;
+    }
+    
+    .welcome-text {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #6c757d;
+    }
+    
+    @media (max-width: 768px) {
+        .auth-container {
+            padding: 30px 15px;
+        }
+        
+        .auth-body {
+            padding: 40px 25px 30px;
+        }
+        
+        .auth-header {
+            padding: 30px 20px 25px;
+        }
+        
+        .auth-header h2 {
+            font-size: 1.75rem;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 col-xl-5">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <h2>🏠 Chào mừng trở lại!</h2>
+                        <p>Đăng nhập để truy cập tài khoản của bạn</p>
                     </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Mật khẩu</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                    <div class="auth-body">
+                        <div class="welcome-text">
+                            <p>Khám phá hàng nghìn bất động sản chất lượng</p>
+                        </div>
+                        
+                        <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="user_id" name="user_id" placeholder="ID người dùng" required>
+                                <label for="user_id">ID người dùng</label>
+                                <i class="fas fa-user input-icon"></i>
+                            </div>
+                            
+                            <div class="form-floating">
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Mật khẩu" required>
+                                <label for="password">Mật khẩu</label>
+                                <button type="button" class="password-toggle" onclick="togglePassword()">
+                                    <i class="fas fa-eye" id="toggleIcon"></i>
+                                </button>
+                            </div>
+                            
+                            <button type="submit" class="btn-login">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                Đăng nhập
+                            </button>
+                        </form>
+                        
+                        <div class="divider">
+                            <span>hoặc</span>
+                        </div>
+                        
+                        <a href="{{ url_for('register') }}" class="btn-register">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Tạo tài khoản mới
+                        </a>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
-                </form>
-                <div class="mt-3 text-center">
-                    <a href="{{ url_for('register') }}" class="btn btn-outline-success w-100">Đăng ký tài khoản mới</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('toggleIcon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+    
+    // Add form validation and loading state
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('.btn-login');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang đăng nhập...';
+        submitBtn.disabled = true;
+    });
+    
+    // Add floating animation to form elements
+    document.querySelectorAll('.form-control').forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'translateY(-2px)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'translateY(0)';
+        });
+    });
+</script>
+{% endblock %}

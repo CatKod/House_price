@@ -334,7 +334,7 @@ def predict():
             width_meters = float(request.form['width_meters'])
 
             # Load the model
-            model_path = os.path.join('models', 'house_price_model.pkl')
+            model_path = os.path.join('C:/Users/kimvi/OneDrive - Hanoi University of Science and Technology/GitHub/My_AI_Project/House_price_prediction/House_price_prediction/models/house_price_model.pkl')
             if not os.path.exists(model_path):
                 flash('Model file not found', 'error')
                 return redirect(url_for('predict'))
@@ -373,26 +373,43 @@ def compare():
             cur = conn.cursor()
 
             cur.execute("""
-                SELECT * FROM public.property
+                SELECT house_id, "Title", "Address", "District", "PostingDate", "PostType", 
+                       "Price", "Area", "Direction", "Bedrooms", "Bathrooms", "Floors", 
+                       "Width_meters", "Legal", "Interior", "Entrancewidth"
+                FROM public.house_prices
                 WHERE house_id = %s OR house_id = %s
             """, (house_id1, house_id2))
             properties = cur.fetchall()
 
             if len(properties) != 2:
                 flash('One or both properties not found', 'error')
-                return redirect(url_for('compare'))
-
-            # Format properties
+                return redirect(url_for('compare'))            # Format properties
             formatted_properties = []
             for prop in properties:
+                # Convert price string to float for comparison
+                try:
+                    raw_price = float(str(prop[6]).replace('tỷ', '').replace(',', '.').strip()) / 1e9 if 'tỷ' in str(prop[6]) else float(prop[6]) / 1e9
+                except:
+                    raw_price = 0
+                
                 formatted_properties.append({
                     'house_id': prop[0],
                     'title': prop[1],
-                    'district': prop[2],
-                    'price': format_price(prop[3]),
-                    'area': prop[4],
-                    'bedrooms': prop[5],
-                    'bathrooms': prop[6]
+                    'address': prop[2],
+                    'district': prop[3],
+                    'posting_date': prop[4],
+                    'post_type': prop[5],
+                    'price': raw_price,  # Numeric price for comparison
+                    'price_formatted': format_price(prop[6]),  # Formatted price for display
+                    'area': prop[7],
+                    'direction': prop[8],
+                    'bedrooms': prop[9],
+                    'bathrooms': prop[10],
+                    'floors': prop[11],
+                    'width_meters': prop[12],
+                    'legal': prop[13],
+                    'interior': prop[14],
+                    'entrance_width': prop[15]
                 })
 
             return render_template('compare.html', properties=formatted_properties)
@@ -679,9 +696,7 @@ def cancel_deposit(house_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Xóa bản ghi đặt cọc của user này cho nhà này
         cur.execute("DELETE FROM public.deposit WHERE user_id = %s AND house_id = %s", (session['user_id'], house_id))
-        # Nếu không còn ai đặt cọc thì chuyển statue về 'Đang bán'
         cur.execute("SELECT COUNT(*) FROM public.deposit WHERE house_id = %s", (house_id,))
         if cur.fetchone()[0] == 0:
             cur.execute("UPDATE public.statues SET statue = 'Đang bán' WHERE house_id = %s", (house_id,))
@@ -700,9 +715,7 @@ def admin_cancel_processing(house_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Xóa tất cả bản ghi đặt cọc cho nhà này
         cur.execute("DELETE FROM public.deposit WHERE house_id = %s", (house_id,))
-        # Chuyển statue về 'Đang bán'
         cur.execute("UPDATE public.statues SET statue = 'Đang bán' WHERE house_id = %s", (house_id,))
         conn.commit()
         cur.close()
@@ -712,6 +725,368 @@ def admin_cancel_processing(house_id):
     except Exception as e:
         flash(f'Lỗi: {str(e)}', 'error')
         return redirect(url_for('admin_processing'))
+
+@app.route('/post_house', methods=['GET', 'POST'])
+@login_required
+def post_house():
+    """Route for posting house listings - both admin and user"""
+    if request.method == 'POST':
+        try:
+            # Extract form data
+            title = request.form['title']
+            address = request.form['address']
+            district = request.form['district']
+            post_type = request.form['post_type']
+            price = request.form['price']
+            area = float(request.form['area'])
+            direction = request.form.get('direction', '')
+            bedrooms = int(request.form['bedrooms'])
+            bathrooms = int(request.form['bathrooms'])
+            floors = int(request.form['floors'])
+            width_meters = float(request.form['width_meters'])
+            legal = request.form['legal']
+            interior = request.form['interior']
+            entrancewidth = float(request.form.get('entrancewidth', 0))
+
+            conn = get_db_connection()
+            cur = conn.cursor()
+
+            if session.get('is_admin'):
+                # Admin post - goes directly to database
+                # Generate new house_id for admin posts
+                cur.execute("""
+                    SELECT house_id FROM public.house_prices
+                    WHERE house_id ~ '^[0-9]+$'
+                    ORDER BY house_id::integer DESC
+                    LIMIT 1
+                """)
+                result = cur.fetchone()
+                
+                if result:
+                    last_id = int(result[0])
+                    new_house_id = f"{last_id + 1:05d}"
+                else:
+                    new_house_id = "00001"
+                
+                current_date = datetime.now().strftime("%Y-%m-%d")
+                
+                # Insert into house_prices table
+                cur.execute("""
+                    INSERT INTO public.house_prices 
+                    (house_id, "Title", "Address", "District", "PostingDate", "PostType", "Price", 
+                     "Area", "Direction", "Bedrooms", "Bathrooms", "Floors", "Width_meters", "Legal", "Interior", "Entrancewidth")
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (new_house_id, title, address, district, current_date, post_type, price, 
+                      area, direction, bedrooms, bathrooms, floors, width_meters, legal, interior, entrancewidth))
+                
+                # Insert into property table (simplified view)
+                cur.execute("""
+                    INSERT INTO public.property 
+                    (house_id, title, district, price, area, bedrooms, bathrooms)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (new_house_id, title, district, price, area, bedrooms, bathrooms))
+                
+                # Insert status as 'Đang bán'
+                cur.execute("""
+                    INSERT INTO public.statues (house_id, statue)
+                    VALUES (%s, 'Đang bán')
+                """, (new_house_id,))
+                
+                conn.commit()
+                flash('Bài đăng đã được thêm thành công!', 'success')
+                
+            else:
+                # User post - goes to wait_for_admin table
+                # Generate new house_id for user posts (with 't' prefix)
+                cur.execute("""
+                    SELECT house_id FROM public.wait_for_admin
+                    WHERE house_id LIKE 't%'
+                    ORDER BY house_id DESC
+                    LIMIT 1
+                """)
+                result = cur.fetchone()
+                
+                if result:
+                    last_id = result[0]
+                    num_part = int(last_id[1:]) + 1
+                    new_house_id = f"t{num_part:04d}"
+                else:
+                    new_house_id = "t0001"
+                
+                current_date = datetime.now().strftime("%Y-%m-%d")
+                
+                # Insert into wait_for_admin table
+                cur.execute("""
+                    INSERT INTO public.wait_for_admin 
+                    (house_id, "Title", "Address", "District", "PostingDate", "PostType", "Price", 
+                     "Area", "Direction", "Bedrooms", "Bathrooms", "Floors", "Width_meters", "Legal", "Interior", "Entrancewidth")
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (new_house_id, title, address, district, current_date, post_type, price, 
+                      area, direction, bedrooms, bathrooms, floors, width_meters, legal, interior, entrancewidth))
+                
+                conn.commit()
+                flash('Bài đăng đã được gửi để chờ admin phê duyệt!', 'success')
+            
+            cur.close()
+            conn.close()
+            return redirect(url_for('index'))
+            
+        except Exception as e:
+            flash(f'Lỗi khi đăng bài: {str(e)}', 'error')
+            return redirect(url_for('post_house'))
+    
+    return render_template('post_house.html')
+
+@app.route('/admin/approve_posts')
+@admin_required
+def admin_approve_posts():
+    """Admin page to approve/reject pending user posts"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        offset = (page - 1) * per_page
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get total count of pending posts
+        cur.execute("SELECT COUNT(*) FROM public.wait_for_admin")
+        total_posts = cur.fetchone()[0]
+        total_pages = (total_posts + per_page - 1) // per_page
+        
+        # Get pending posts with pagination
+        cur.execute("""
+            SELECT house_id, "Title", "District", "Price", "Area", "Bedrooms", "Bathrooms", "PostingDate"
+            FROM public.wait_for_admin
+            ORDER BY "PostingDate" DESC
+            LIMIT %s OFFSET %s
+        """, (per_page, offset))
+        
+        pending_posts = cur.fetchall()
+        
+        # Format posts
+        formatted_posts = []
+        for post in pending_posts:
+            formatted_posts.append({
+                'house_id': post[0],
+                'title': post[1],
+                'district': post[2],
+                'price': format_price(post[3]),
+                'area': post[4],
+                'bedrooms': post[5],
+                'bathrooms': post[6],
+                'posting_date': post[7]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return render_template('admin_approve_posts.html', 
+                             posts=formatted_posts, 
+                             page=page, 
+                             total_pages=total_pages,
+                             total_posts=total_posts)
+        
+    except Exception as e:
+        flash(f'Lỗi: {str(e)}', 'error')
+        return render_template('error.html', message='Không thể tải danh sách bài đăng chờ phê duyệt')
+
+@app.route('/admin/approve_post/<house_id>', methods=['POST'])
+@admin_required
+def approve_post(house_id):
+    """Approve a pending user post"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get post data from wait_for_admin
+        cur.execute("SELECT * FROM public.wait_for_admin WHERE house_id = %s", (house_id,))
+        post_data = cur.fetchone()
+        
+        if not post_data:
+            flash('Bài đăng không tồn tại!', 'error')
+            return redirect(url_for('admin_approve_posts'))
+        
+        # Generate new official house_id
+        cur.execute("""
+            SELECT house_id FROM public.house_prices
+            WHERE house_id ~ '^[0-9]+$'
+            ORDER BY house_id::integer DESC
+            LIMIT 1
+        """)
+        result = cur.fetchone()
+        
+        if result:
+            last_id = int(result[0])
+            new_house_id = f"{last_id + 1:05d}"
+        else:
+            new_house_id = "00001"
+        
+        # Move to house_prices table with new ID
+        cur.execute("""
+            INSERT INTO public.house_prices 
+            (house_id, "Title", "Address", "District", "PostingDate", "PostType", "Price", 
+             "Area", "Direction", "Bedrooms", "Bathrooms", "Floors", "Width_meters", "Legal", "Interior", "Entrancewidth")
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (new_house_id, post_data[1], post_data[2], post_data[3], post_data[4], 
+              post_data[5], post_data[6], post_data[7], post_data[8], post_data[9], 
+              post_data[10], post_data[11], post_data[12], post_data[13], post_data[14], post_data[15]))
+        
+        # Insert into property table
+        cur.execute("""
+            INSERT INTO public.property 
+            (house_id, title, district, price, area, bedrooms, bathrooms)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (new_house_id, post_data[1], post_data[3], post_data[6], post_data[7], post_data[9], post_data[10]))
+        
+        # Insert status as 'Đang bán'
+        cur.execute("""
+            INSERT INTO public.statues (house_id, statue)
+            VALUES (%s, 'Đang bán')
+        """, (new_house_id,))
+        
+        # Remove from wait_for_admin
+        cur.execute("DELETE FROM public.wait_for_admin WHERE house_id = %s", (house_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        flash('Bài đăng đã được phê duyệt thành công!', 'success')
+        return redirect(url_for('admin_approve_posts'))
+        
+    except Exception as e:
+        flash(f'Lỗi khi phê duyệt bài đăng: {str(e)}', 'error')
+        return redirect(url_for('admin_approve_posts'))
+
+@app.route('/admin/reject_post/<house_id>', methods=['POST'])
+@admin_required
+def reject_post(house_id):
+    """Reject a pending user post"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Remove from wait_for_admin
+        cur.execute("DELETE FROM public.wait_for_admin WHERE house_id = %s", (house_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        flash('Bài đăng đã bị từ chối!', 'info')
+        return redirect(url_for('admin_approve_posts'))
+        
+    except Exception as e:
+        flash(f'Lỗi khi từ chối bài đăng: {str(e)}', 'error')
+        return redirect(url_for('admin_approve_posts'))
+
+@app.route('/admin/view_pending_post/<house_id>')
+@admin_required
+def view_pending_post(house_id):
+    """View detailed information of a pending post"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get post data from wait_for_admin
+        cur.execute("SELECT * FROM public.wait_for_admin WHERE house_id = %s", (house_id,))
+        post_data = cur.fetchone()
+        
+        if not post_data:
+            flash('Bài đăng không tồn tại!', 'error')
+            return redirect(url_for('admin_approve_posts'))
+        
+        # Get column names
+        cur.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            AND table_name = 'wait_for_admin'
+            ORDER BY ordinal_position
+        """)
+        columns = [col[0] for col in cur.fetchall()]
+        
+        # Create post dictionary
+        post = dict(zip(columns, post_data))
+        post['price'] = format_price(post['Price'])
+        
+        cur.close()
+        conn.close()
+        
+        return render_template('view_pending_post.html', post=post)
+        
+    except Exception as e:
+        flash(f'Lỗi: {str(e)}', 'error')
+        return redirect(url_for('admin_approve_posts'))
+
+@app.route('/my_posts')
+@login_required
+def my_posts():
+    """View user's posted properties (both approved and pending)"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        pending_posts = []
+        approved_posts = []
+        
+        if not session.get('is_admin'):
+            # Get pending posts from wait_for_admin (for regular users)
+            cur.execute("""
+                SELECT house_id, "Title", "District", "Price", "Area", "Bedrooms", "Bathrooms", "PostingDate"
+                FROM public.wait_for_admin
+                ORDER BY "PostingDate" DESC
+            """)
+            pending_data = cur.fetchall()
+            
+            for post in pending_data:
+                pending_posts.append({
+                    'house_id': post[0],
+                    'title': post[1],
+                    'district': post[2],
+                    'price': format_price(post[3]),
+                    'area': post[4],
+                    'bedrooms': post[5],
+                    'bathrooms': post[6],
+                    'posting_date': post[7],
+                    'status': 'Chờ phê duyệt'
+                })
+        
+        # Note: We could track approved posts by adding a user_id field to house_prices in future
+        # For now, we'll show admin that all posts in house_prices are their approved posts
+        if session.get('is_admin'):
+            cur.execute("""
+                SELECT house_id, "Title", "District", "Price", "Area", "Bedrooms", "Bathrooms", "PostingDate"
+                FROM public.house_prices
+                ORDER BY "PostingDate" DESC
+                LIMIT 20
+            """)
+            approved_data = cur.fetchall()
+            
+            for post in approved_data:
+                approved_posts.append({
+                    'house_id': post[0],
+                    'title': post[1],
+                    'district': post[2],
+                    'price': format_price(post[3]),
+                    'area': post[4],
+                    'bedrooms': post[5],
+                    'bathrooms': post[6],
+                    'posting_date': post[7],
+                    'status': 'Đã phê duyệt'
+                })
+        
+        cur.close()
+        conn.close()
+        
+        return render_template('my_posts.html', 
+                             pending_posts=pending_posts, 
+                             approved_posts=approved_posts)
+        
+    except Exception as e:
+        flash(f'Lỗi: {str(e)}', 'error')
+        return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

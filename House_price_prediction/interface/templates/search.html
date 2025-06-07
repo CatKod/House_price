@@ -3,28 +3,61 @@
 {% block title %}Tìm kiếm{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>Tìm kiếm Bất Động Sản</h1>
+<!-- Search Header -->
+<div class="search-header mb-5">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1 class="search-title">
+                <i class="fas fa-search me-3"></i>
+                Tìm Kiếm Bất Động Sản
+            </h1>
+            <p class="search-subtitle">Khám phá hàng nghìn bất động sản theo tiêu chí của bạn</p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <div class="search-stats">
+                {% if properties %}
+                <div class="result-count">
+                    <span class="count-number">{{ total_properties }}</span>
+                    <span class="count-label">kết quả</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">Bộ lọc tìm kiếm</h5>
+    <div class="col-lg-4 mb-4">
+        <!-- Enhanced Search Filter Card -->
+        <div class="filter-card">
+            <div class="filter-header">
+                <h5 class="filter-title">
+                    <i class="fas fa-sliders-h me-2"></i>
+                    Bộ Lọc Tìm Kiếm
+                </h5>
+                <small class="filter-subtitle">Tùy chỉnh tìm kiếm của bạn</small>
             </div>
-            <div class="card-body">
-                <form action="{{ url_for('search') }}" method="GET">
-                    <div class="mb-3">
-                        <label for="q" class="form-label">Từ khóa</label>
-                        <input type="text" class="form-control" id="q" name="q" value="{{ search_term }}">
+            <div class="filter-body">
+                <form action="{{ url_for('search') }}" method="GET" class="search-form">
+                    <!-- Search Keyword -->
+                    <div class="form-group">
+                        <label for="q" class="form-label">
+                            <i class="fas fa-keyboard me-2"></i>Từ khóa
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="text" class="form-control" id="q" name="q" 
+                                   value="{{ search_term }}" placeholder="Nhập từ khóa tìm kiếm...">
+                            <i class="fas fa-search input-icon"></i>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="district" class="form-label">Quận/Huyện</label>
+
+                    <!-- District Filter -->
+                    <div class="form-group">
+                        <label for="district" class="form-label">
+                            <i class="fas fa-map-marker-alt me-2"></i>Quận/Huyện
+                        </label>
                         <select class="form-select" id="district" name="district">
-                            <option value="">Tất cả</option>
+                            <option value="">Tất cả quận/huyện</option>
                             <option value="Ba Đình" {% if selected_district == 'Ba Đình' %}selected{% endif %}>Ba Đình</option>
                             <option value="Cầu Giấy" {% if selected_district == 'Cầu Giấy' %}selected{% endif %}>Cầu Giấy</option>
                             <option value="Hoàn Kiếm" {% if selected_district == 'Hoàn Kiếm' %}selected{% endif %}>Hoàn Kiếm</option>
@@ -55,126 +88,814 @@
                             <option value="Thường Tín" {% if selected_district == 'Thường Tín' %}selected{% endif %}>Thường Tín</option>
                             <option value="Phú Xuyên" {% if selected_district == 'Phú Xuyên' %}selected{% endif %}>Phú Xuyên</option>
                             <option value="Mỹ Đức" {% if selected_district == 'Mỹ Đức' %}selected{% endif %}>Mỹ Đức</option>
-                            {% for district in districts %}
-                            {% if district not in [
-                                'Ba Đình','Cầu Giấy','Hoàn Kiếm','Hai Bà Trưng','Hoàng Mai','Đống Đa','Hà Đông','Tây Hồ','Long Biên','Nam Từ Liêm','Thanh Xuân',
-                                'Đông Anh','Sóc Sơn','Gia Lâm','Thanh Trì','Mê Linh','Sơn Tây','Bắc Từ Liêm','Chương Mỹ','Ba Vì','Đan Phượng','Hoài Đức','Quốc Oai',
-                                'Thạch Thất','Phúc Thọ','Thanh Oai','Ứng Hòa','Thường Tín','Phú Xuyên','Mỹ Đức'
-                            ] %}
-                            <!-- <option value="{{ district }}" {% if district == selected_district %}selected{% endif %}>{{ district }}</option> -->
-                            {% endif %}
-                            {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Khoảng giá (tỷ)</label>
-                        <div class="row">
-                            <div class="col">
-                                <input type="number" class="form-control" name="price_min" placeholder="Từ" step="0.1" min="0" value="{{ request.args.get('price_min', '') }}">
+
+                    <!-- Price Range -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-money-bill-wave me-2"></i>Khoảng giá
+                        </label>
+                        <div class="range-inputs">
+                            <div class="range-input">
+                                <input type="number" class="form-control" name="price_min" 
+                                       placeholder="Từ (tỷ)" step="0.1" min="0" 
+                                       value="{{ request.args.get('price_min', '') }}">
                             </div>
-                            <div class="col">
-                                <input type="number" class="form-control" name="price_max" placeholder="Đến" step="0.1" min="0" value="{{ request.args.get('price_max', '') }}">
+                            <div class="range-separator">
+                                <i class="fas fa-minus"></i>
+                            </div>
+                            <div class="range-input">
+                                <input type="number" class="form-control" name="price_max" 
+                                       placeholder="Đến (tỷ)" step="0.1" min="0" 
+                                       value="{{ request.args.get('price_max', '') }}">
                             </div>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Diện tích (m²)</label>
-                        <div class="row">
-                            <div class="col">
-                                <input type="number" class="form-control" name="area_min" placeholder="Từ" min="0" value="{{ request.args.get('area_min', '') }}">
+
+                    <!-- Area Range -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-ruler-combined me-2"></i>Diện tích
+                        </label>
+                        <div class="range-inputs">
+                            <div class="range-input">
+                                <input type="number" class="form-control" name="area_min" 
+                                       placeholder="Từ (m²)" min="0" 
+                                       value="{{ request.args.get('area_min', '') }}">
                             </div>
-                            <div class="col">
-                                <input type="number" class="form-control" name="area_max" placeholder="Đến" min="0" value="{{ request.args.get('area_max', '') }}">
+                            <div class="range-separator">
+                                <i class="fas fa-minus"></i>
+                            </div>
+                            <div class="range-input">
+                                <input type="number" class="form-control" name="area_max" 
+                                       placeholder="Đến (m²)" min="0" 
+                                       value="{{ request.args.get('area_max', '') }}">
                             </div>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="bedrooms" class="form-label">Số phòng ngủ</label>
+
+                    <!-- Bedrooms -->
+                    <div class="form-group">
+                        <label for="bedrooms" class="form-label">
+                            <i class="fas fa-bed me-2"></i>Số phòng ngủ
+                        </label>
                         <select class="form-select" id="bedrooms" name="bedrooms">
                             <option value="">Tất cả</option>
                             {% for i in range(1, 6) %}
-                            <option value="{{ i }}" {% if request.args.get('bedrooms') == i|string %}selected{% endif %}>{{ i }}+</option>
+                            <option value="{{ i }}" {% if request.args.get('bedrooms') == i|string %}selected{% endif %}>{{ i }}+ phòng</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search me-2"></i>Tìm kiếm
+
+                    <!-- Search Button -->
+                    <button type="submit" class="btn btn-primary btn-search w-100">
+                        <i class="fas fa-search me-2"></i>
+                        <span>Tìm kiếm</span>
+                        <div class="btn-ripple"></div>
                     </button>
                 </form>
             </div>
         </div>
-    </div>
-
-    <div class="col-md-8">
+    </div>    <div class="col-lg-8">
         {% if properties %}
-            <div class="alert alert-info">
-                Tìm thấy {{ total_properties }} kết quả cho "{{ search_term }}"
+            <!-- Search Results Header -->
+            <div class="results-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="results-info">
+                        <h4 class="results-title">
+                            <i class="fas fa-list-ul me-2"></i>
+                            Kết quả tìm kiếm
+                        </h4>
+                        <p class="results-count">
+                            Tìm thấy <strong>{{ total_properties }}</strong> bất động sản 
+                            {% if search_term %}cho từ khóa "<strong>{{ search_term }}</strong>"{% endif %}
+                        </p>
+                    </div>
+                    <div class="sort-options">
+                        <label for="sort-select" class="visually-hidden">Sắp xếp kết quả</label>
+                        <select id="sort-select" class="form-select form-select-sm" onchange="sortResults(this.value)" aria-label="Sắp xếp kết quả">
+                            <option value="newest">Mới nhất</option>
+                            <option value="price_low">Giá thấp đến cao</option>
+                            <option value="price_high">Giá cao đến thấp</option>
+                            <option value="area_large">Diện tích lớn nhất</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
-            <div class="row">
+            <!-- Properties Grid -->
+            <div class="search-results-grid">
                 {% for property in properties %}
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ property.title }}</h5>
-                            <p class="card-text">
-                                <strong>ID:</strong> {{ property.house_id }}<br>
-                                <strong>Quận/Huyện:</strong> {{ property.district }}<br>
-                                <strong>Giá:</strong> {{ property.price }}<br>
-                                <strong>Diện tích:</strong> {{ property.area }} m²<br>
-                                <strong>Phòng ngủ:</strong> {{ property.bedrooms }}<br>
-                                <strong>Phòng tắm:</strong> {{ property.bathrooms }}
-                            </p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <a href="{{ url_for('property_details', house_id=property.house_id) }}" class="btn btn-primary">Xem chi tiết</a>
-                                {% if not session.get('is_admin', False) %}
-                                <a href="{{ url_for('deposit', house_id=property.house_id) }}" class="btn btn-warning ms-2">Đặt cọc</a>
-                                {% endif %}
-                                {% if session.get('user_id') %}
-                                <form action="{{ url_for('add_favorite', house_id=property.house_id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-danger" title="Yêu thích">
-                                        <i class="fas fa-heart"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
+                <div class="search-property-card">
+                    <div class="property-image-placeholder">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    
+                    <div class="property-content">
+                        <div class="property-header">
+                            <h5 class="property-title">{{ property.title }}</h5>
+                            <div class="property-badge">
+                                <span class="badge bg-success">Đang bán</span>
                             </div>
+                        </div>
+                          <div class="property-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-tag text-primary"></i>
+                                <span>ID: {{ property.house_id }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-map-marker-alt text-danger"></i>
+                                <span>{{ property.district }}</span>
+                            </div>
+                            {% if property.posttype %}
+                            <div class="meta-item">
+                                <i class="fas fa-clipboard-list text-info"></i>
+                                <span>{{ property.posttype }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="property-address mb-2">
+                            <i class="fas fa-location-arrow text-muted me-1"></i>
+                            <small class="text-muted">{{ property.address or 'Địa chỉ chi tiết liên hệ' }}</small>
+                        </div>
+                        
+                        <div class="property-price">
+                            <i class="fas fa-money-bill-wave text-success"></i>
+                            <span class="price-value">{{ property.price }}</span>
+                        </div>
+                        
+                        <div class="property-details-grid">
+                            <div class="detail-item">
+                                <i class="fas fa-ruler-combined text-info"></i>
+                                <span>{{ property.area }} m²</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-bed text-primary"></i>
+                                <span>{{ property.bedrooms }} PN</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-bath text-info"></i>
+                                <span>{{ property.bathrooms }} PT</span>
+                            </div>
+                            {% if property.floors %}
+                            <div class="detail-item">
+                                <i class="fas fa-building text-warning"></i>
+                                <span>{{ property.floors }} tầng</span>
+                            </div>
+                            {% endif %}
+                            {% if property.direction %}
+                            <div class="detail-item">
+                                <i class="fas fa-compass text-success"></i>
+                                <span>{{ property.direction }}</span>
+                            </div>
+                            {% endif %}
+                            {% if property.width_meters %}
+                            <div class="detail-item">
+                                <i class="fas fa-arrows-alt-h text-secondary"></i>
+                                <span>{{ property.width_meters }}m</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="property-additional-info mt-2">
+                            {% if property.legal %}
+                            <div class="info-item">
+                                <i class="fas fa-gavel text-primary me-1"></i>
+                                <small class="text-muted">Pháp lý: {{ property.legal }}</small>
+                            </div>
+                            {% endif %}
+                            {% if property.interior %}
+                            <div class="info-item">
+                                <i class="fas fa-couch text-info me-1"></i>
+                                <small class="text-muted">Nội thất: {{ property.interior }}</small>
+                            </div>
+                            {% endif %}
+                            {% if property.entrancewidth %}
+                            <div class="info-item">
+                                <i class="fas fa-door-open text-secondary me-1"></i>
+                                <small class="text-muted">Lối vào: {{ property.entrancewidth }}</small>
+                            </div>
+                            {% endif %}
+                            {% if property.postingdate %}
+                            <div class="info-item">
+                                <i class="fas fa-calendar text-muted me-1"></i>
+                                <small class="text-muted">Đăng: {{ property.postingdate.strftime('%d/%m/%Y') if property.postingdate else 'N/A' }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="property-actions">
+                            <a href="{{ url_for('property_details', house_id=property.house_id) }}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-info-circle me-1"></i>Chi tiết
+                            </a>
+                            {% if not session.get('is_admin', False) %}
+                            <a href="{{ url_for('deposit', house_id=property.house_id) }}" 
+                               class="btn btn-warning btn-sm">
+                                <i class="fas fa-hand-holding-usd me-1"></i>Đặt cọc
+                            </a>
+                            {% endif %}
+                            {% if session.get('user_id') %}
+                            <form action="{{ url_for('add_favorite', house_id=property.house_id) }}" 
+                                  method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                        title="Thêm vào yêu thích">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </form>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
                 {% endfor %}
-            </div>
-
-            <!-- Pagination -->
-            <nav aria-label="Page navigation" class="mt-4">
-                <ul class="pagination justify-content-center">
+            </div>            <nav aria-label="Search pagination" class="mt-5">
+                <ul class="pagination pagination-modern justify-content-center">
                     {% if current_page > 1 %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('search', q=search_term, page=current_page-1, per_page=per_page) }}">
-                            Trước
-                        </a>
-                    </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('search', q=search_term, page=current_page-1, per_page=per_page) }}">
+                                <i class="fas fa-chevron-left me-1"></i>Trước
+                            </a>
+                        </li>
                     {% endif %}
-
                     {% for i in range(1, total_pages + 1) %}
-                    <li class="page-item {% if i == current_page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('search', q=search_term, page=i, per_page=per_page) }}">
-                            {{ i }}
-                        </a>
-                    </li>
+                        <li class="page-item {% if i == current_page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('search', q=search_term, page=i, per_page=per_page) }}">
+                                {{ i }}
+                            </a>
+                        </li>
                     {% endfor %}
-
                     {% if current_page < total_pages %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('search', q=search_term, page=current_page+1, per_page=per_page) }}">
-                            Sau
-                        </a>
-                    </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('search', q=search_term, page=current_page+1, per_page=per_page) }}">
+                                Sau<i class="fas fa-chevron-right ms-1"></i>
+                            </a>
+                        </li>
                     {% endif %}
                 </ul>
             </nav>
         {% else %}
-            <div class="alert alert-info">Không tìm thấy kết quả nào cho "{{ search_term }}"</div>
+            <!-- No Results State -->
+            <div class="no-results-state">
+                <div class="no-results-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h4 class="no-results-title">Không tìm thấy kết quả</h4>
+                <p class="no-results-description">
+                    {% if search_term %}
+                    Không tìm thấy bất động sản nào với từ khóa "<strong>{{ search_term }}</strong>".
+                    {% else %}
+                    Hãy thử điều chỉnh bộ lọc tìm kiếm của bạn.
+                    {% endif %}
+                </p>
+                <div class="no-results-suggestions">
+                    <h6>Gợi ý:</h6>
+                    <ul>
+                        <li>Thử sử dụng từ khóa khác</li>
+                        <li>Mở rộng khoảng giá tìm kiếm</li>
+                        <li>Chọn thêm quận/huyện</li>
+                        <li>Giảm yêu cầu về số phòng ngủ</li>
+                    </ul>
+                </div>
+                <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg mt-3">
+                    <i class="fas fa-home me-2"></i>Xem tất cả bất động sản
+                </a>
+            </div>
         {% endif %}
     </div>
 </div>
+
+<style>
+/* Search Header Styles */
+.search-header {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    padding: 2.5rem 2rem;
+    border-radius: 25px;
+    margin-bottom: 2rem;
+}
+
+.search-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.search-subtitle {
+    font-size: 1.2rem;
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+.search-stats {
+    text-align: center;
+}
+
+.result-count {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.count-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.count-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Filter Card Styles */
+.filter-card {
+    background: white;
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    position: sticky;
+    top: 20px;
+}
+
+.filter-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+}
+
+.filter-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 20px 20px 0 0;
+    text-align: center;
+}
+
+.filter-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.filter-subtitle {
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+.filter-body {
+    padding: 2rem;
+}
+
+.search-form .form-group {
+    margin-bottom: 2rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+}
+
+.form-label i {
+    color: #667eea;
+}
+
+/* Input Wrapper */
+.input-wrapper {
+    position: relative;
+}
+
+.input-wrapper .form-control {
+    padding-right: 3rem;
+}
+
+.input-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+/* Range Inputs */
+.range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.range-input {
+    flex: 1;
+}
+
+.range-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    color: #6c757d;
+}
+
+/* Search Button */
+.btn-search {
+    position: relative;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    padding: 1rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.btn-search:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-ripple {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-search:hover .btn-ripple {
+    left: 100%;
+}
+
+/* Results Header */
+.results-header {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.results-title {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.results-count {
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+.sort-options .form-select {
+    min-width: 150px;
+    border-radius: 10px;
+}
+
+/* Search Results Grid */
+.search-results-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.search-property-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    height: auto;
+    min-height: 180px;
+    width: 100%;
+}
+
+.search-property-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.property-image-placeholder {
+    flex: 0 0 120px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2.5rem;
+}
+
+.property-content {
+    flex: 1;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.property-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.property-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+    line-height: 1.3;
+    flex: 1;
+    margin-right: 1rem;
+}
+
+.property-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.property-price {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.price-value {
+    color: #28a745;
+    font-weight: 700;
+}
+
+.property-details-grid {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    color: #495057;
+    background: rgba(0,123,255,0.05);
+    padding: 6px 12px;
+    border-radius: 15px;
+    border: 1px solid rgba(0,123,255,0.1);
+    white-space: nowrap;
+}
+
+.property-address {
+    font-style: italic;
+    color: #6c757d;
+    border-left: 3px solid #007bff;
+    padding-left: 10px;
+    margin-bottom: 10px;
+}
+
+.property-additional-info {
+    border-top: 1px solid #eee;
+    padding-top: 8px;
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+    flex: 0 1 auto;
+}
+
+.property-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f0f0f0;
+}
+
+.property-actions .btn {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+}
+
+/* No Results State */
+.no-results-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.no-results-icon {
+    font-size: 6rem;
+    color: #e9ecef;
+    margin-bottom: 2rem;
+}
+
+.no-results-title {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.no-results-description {
+    color: #6c757d;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+.no-results-suggestions {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    text-align: left;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.no-results-suggestions h6 {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.no-results-suggestions ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.no-results-suggestions li {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+/* Enhanced Pagination */
+.pagination-modern .page-link {
+    border: none;
+    border-radius: 50px;
+    margin: 0 0.25rem;
+    padding: 0.75rem 1.25rem;
+    font-weight: 500;
+    color: #667eea;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.pagination-modern .page-link:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.pagination-modern .page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .search-title {
+        font-size: 2rem;
+    }
+    
+    .search-header {
+        padding: 2rem 1rem;
+        text-align: center;
+    }
+    
+    .filter-card {
+        position: static;
+    }
+    
+    .search-results-grid {
+        gap: 1rem;
+    }
+    
+    .search-property-card {
+        flex-direction: column;
+        height: auto;
+        min-height: 300px;
+    }
+    
+    .property-image-placeholder {
+        flex: 0 0 80px;
+        font-size: 2rem;
+        width: 100%;
+    }
+    
+    .property-content {
+        padding: 1rem;
+    }
+    
+    .property-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .property-title {
+        margin-right: 0;
+    }
+    
+    .range-inputs {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .range-separator {
+        transform: rotate(90deg);
+        width: 20px;
+        height: 20px;
+    }
+    
+    .results-header .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .sort-options {
+        align-self: stretch;
+    }
+}
+
+@media (max-width: 576px) {
+    .property-meta,
+    .property-details-grid {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .property-actions {
+        flex-direction: column;
+    }
+    
+    .property-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+function sortResults(sortBy) {
+    // Add sorting functionality here
+    console.log('Sorting by:', sortBy);
+    // This would typically involve AJAX or form submission
+}
+
+// Add search form enhancements
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus search input on page load
+    const searchInput = document.getElementById('q');
+    if (searchInput && !searchInput.value) {
+        searchInput.focus();
+    }
+    
+    // Add loading state to search button
+    const searchForm = document.querySelector('.search-form');
+    const searchButton = document.querySelector('.btn-search');
+    
+    if (searchForm && searchButton) {
+        searchForm.addEventListener('submit', function() {
+            searchButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang tìm...';
+            searchButton.disabled = true;
+        });
+    }
+});
+</script>
 {% endblock %}

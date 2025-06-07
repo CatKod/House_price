@@ -3,129 +3,645 @@
 {% block title %}{{ property.title if property else house_prices['Title'] if house_prices else 'Chi tiết nhà' }}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">{{ property.title if property else house_prices['Title'] if house_prices else 'Chi tiết nhà' }}</h4>
-                {% if session.get('user_id') %}
-                <form action="{{ url_for('add_favorite', house_id=property.house_id if property else house_prices['house_id']) }}" method="POST" class="d-inline">
-                    <button type="submit" class="btn btn-outline-light">
-                        <i class="fas fa-heart"></i> Yêu thích
-                    </button>
-                </form>
-                {% endif %}
-            </div>
-            <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h5>Thông tin cơ bản</h5>
-                        <table class="table">
-                            {% if property %}
-                            <tr><th>ID:</th><td>{{ property.house_id }}</td></tr>
-                            <tr><th>Quận/Huyện:</th><td>{{ property.district }}</td></tr>
-                            <tr><th>Giá:</th><td>{{ property.price }}</td></tr>
-                            <tr><th>Diện tích:</th><td>{{ property.area }} m²</td></tr>
-                            <tr><th>Phòng ngủ:</th><td>{{ property.bedrooms }}</td></tr>
-                            <tr><th>Phòng tắm:</th><td>{{ property.bathrooms }}</td></tr>
-                            {% endif %}
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        {% if house_prices %}
-                        <h5>Thông tin chi tiết (house_prices)</h5>
-                        <table class="table table-bordered table-sm">
-                            {% for key, value in house_prices.items() %}
-                            <tr>
-                                <th>{{ key }}</th>
-                                <td>{{ value }}</td>
-                            </tr>
-                            {% endfor %}
-                        </table>
-                        {% endif %}
-                    </div>
-                </div>
+<style>
+    .property-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 60px 0 40px;
+        margin-bottom: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .property-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 1;
+    }
+    
+    .property-hero .container {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 30px;
+    }
+    
+    .hero-actions {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .hero-btn {
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .hero-btn-primary {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .hero-btn-primary:hover {
+        background: white;
+        color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .property-main {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 40px;
+        margin-bottom: 40px;
+    }
+    
+    .property-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .property-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-header-custom {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 25px 30px;
+        border-bottom: 1px solid #e3e6f0;
+    }
+    
+    .card-header-custom h4 {
+        margin: 0;
+        color: #495057;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .card-body-custom {
+        padding: 30px;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .info-section h5 {
+        color: #667eea;
+        font-weight: 700;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .info-table {
+        background: #f8f9fa;
+        border-radius: 15px;
+        overflow: hidden;
+        border: none;
+    }
+    
+    .info-table tr {
+        border: none;
+    }
+    
+    .info-table th {
+        background: rgba(102, 126, 234, 0.1);
+        color: #495057;
+        font-weight: 600;
+        padding: 15px 20px;
+        border: none;
+        font-size: 0.95rem;
+    }
+    
+    .info-table td {
+        padding: 15px 20px;
+        border: none;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .info-table tr:nth-child(even) {
+        background: rgba(248, 249, 250, 0.5);
+    }
+    
+    .description-section {
+        background: rgba(102, 126, 234, 0.05);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .description-section h5 {
+        color: #667eea;
+        font-weight: 700;
+        margin-bottom: 15px;
+    }
+    
+    .description-section p {
+        color: #6c757d;
+        line-height: 1.7;
+        margin: 0;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .btn-custom {
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+    }
+    
+    .btn-back {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-back:hover {
+        background: #495057;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .btn-compare {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-compare:hover {
+        background: #5a6fd8;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .btn-deposit {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .btn-deposit:hover {
+        background: #ffb300;
+        color: #212529;
+        transform: translateY(-2px);
+    }
+    
+    .btn-admin {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .btn-admin:hover {
+        background: #c82333;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .sidebar-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 30px;
+        transition: all 0.3s ease;
+    }
+    
+    .sidebar-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .contact-card .card-header-custom {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .contact-info {
+        padding: 25px;
+    }
+    
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: rgba(40, 167, 69, 0.05);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .contact-item:hover {
+        background: rgba(40, 167, 69, 0.1);
+        transform: translateX(5px);
+    }
+    
+    .contact-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.1rem;
+    }
+    
+    .contact-item a {
+        color: #495057;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .contact-item a:hover {
+        color: #28a745;
+    }
+    
+    .btn-contact {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 15px;
+        border-radius: 12px;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-contact:hover {
+        background: linear-gradient(135deg, #218838 0%, #1e7e6d 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+    }
+    
+    .similar-card .card-header-custom {
+        background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+        color: white;
+    }
+    
+    .similar-properties {
+        padding: 25px;
+    }
+    
+    .similar-item {
+        padding: 20px;
+        background: rgba(23, 162, 184, 0.05);
+        border-radius: 15px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        border-left: 4px solid #17a2b8;
+    }
+    
+    .similar-item:hover {
+        background: rgba(23, 162, 184, 0.1);
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(23, 162, 184, 0.2);
+    }
+    
+    .similar-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .similar-item h6 {
+        margin-bottom: 10px;
+    }
+    
+    .similar-item h6 a {
+        color: #495057;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.3s ease;
+    }
+    
+    .similar-item h6 a:hover {
+        color: #17a2b8;
+    }
+    
+    .similar-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+    }
+    
+    .similar-district {
+        color: #6c757d;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .similar-price {
+        color: #17a2b8;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    
+    .favorite-btn {
+        background: transparent;
+        border: 2px solid #dc3545;
+        color: #dc3545;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .favorite-btn:hover {
+        background: #dc3545;
+        color: white;
+        transform: scale(1.05);
+    }
+    
+    .price-highlight {
+        display: inline-block;
+        background: linear-gradient(135deg, #ffc107 0%, #ff6b35 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-left: 10px;
+    }
+    
+    @media (max-width: 1200px) {
+        .property-main {
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2rem;
+        }
+        
+        .hero-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .hero-btn {
+            justify-content: center;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .card-body-custom {
+            padding: 20px;
+        }
+        
+        .contact-info,
+        .similar-properties {
+            padding: 20px;
+        }
+    }
+</style>
 
-                {% if property.description %}
-                <div class="mb-4">
-                    <h5>Mô tả</h5>
-                    <p>{{ property.description }}</p>
-                </div>
-                {% endif %}
-
-                <div class="d-flex justify-content-between">
-                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Quay lại
-                    </a>
-                    {% if session.get('user_id') %}
-                    <a href="{{ url_for('compare') }}?house_id1={{ property.house_id if property else house_prices['house_id'] }}" class="btn btn-primary">
-                        <i class="fas fa-exchange-alt"></i> So sánh
-                    </a>
+<div class="property-hero">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="hero-title">
+                    {{ property.title if property else house_prices['Title'] if house_prices else 'Chi tiết bất động sản' }}
+                    {% if property and property.price %}
+                        <span class="price-highlight">{{ property.price }} tỷ</span>
                     {% endif %}
-                </div>
-                {% if session.get('is_admin') %}
-                <div class="mt-3">
-                    <a href="{{ url_for('update_status', house_id=property.house_id if property else house_prices['house_id']) }}" class="btn btn-warning">Cập nhật trạng thái</a>
-                </div>
-                {% endif %}
-                <div class="mt-3">
-                    <a href="{{ url_for('property_details', house_id=property.house_id) }}" class="btn btn-primary">Xem chi tiết</a>
-                    {% if not session.get('is_admin', False) %}
-                    <a href="{{ url_for('deposit', house_id=property.house_id) }}" class="btn btn-warning ms-2">Đặt cọc</a>
-                    {% endif %}
+                </h1>
+                <p class="hero-subtitle">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    {{ property.district if property else 'Thông tin chi tiết' }}
+                </p>
+                <div class="hero-actions">
                     {% if session.get('user_id') %}
-                    <form action="{{ url_for('add_favorite', house_id=property.house_id) }}" method="POST" class="d-inline">
-                        <button type="submit" class="btn btn-outline-danger" title="Yêu thích">
-                            <i class="fas fa-heart"></i>
+                    <form action="{{ url_for('add_favorite', house_id=property.house_id if property else house_prices['house_id']) }}" method="POST" class="d-inline">
+                        <button type="submit" class="hero-btn hero-btn-primary">
+                            <i class="fas fa-heart"></i> Yêu thích
                         </button>
                     </form>
                     {% endif %}
+                    <a href="{{ url_for('index') }}" class="hero-btn hero-btn-primary">
+                        <i class="fas fa-arrow-left"></i> Quay lại trang chủ
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card mb-4">
-            <div class="card-header bg-success text-white">
-                <h5 class="card-title mb-0">Thông tin liên hệ</h5>
-            </div>
-            <div class="card-body">
-                <p class="mb-2">
-                    <i class="fas fa-phone me-2"></i>
-                    <a href="tel:0123456789">0123456789</a>
-                </p>
-                <p class="mb-2">
-                    <i class="fas fa-envelope me-2"></i>
-                    <a href="mailto:contact@example.com">contact@example.com</a>
-                </p>
-                <button class="btn btn-success w-100">
-                    <i class="fas fa-comment me-2"></i>
-                    Liên hệ ngay
-                </button>
-            </div>
-        </div>
-
-        {% if similar_properties %}
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">Bất động sản tương tự</h5>
-            </div>
-            <div class="card-body">
-                {% for similar in similar_properties %}
-                <div class="mb-3">
-                    <h6>
-                        <a href="{{ url_for('property_details', house_id=similar.house_id) }}">
-                            {{ similar.title }}
-                        </a>
-                    </h6>
-                    <p class="small text-muted mb-1">{{ similar.district }}</p>
-                    <p class="small text-primary mb-0">{{ similar.price }} tỷ</p>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
+
+<div class="container">
+    <div class="property-main">
+        <div class="main-content">
+            <div class="property-card">
+                <div class="card-header-custom">
+                    <h4>
+                        <i class="fas fa-home"></i>
+                        Thông tin chi tiết
+                    </h4>
+                </div>
+                <div class="card-body-custom">
+                    <div class="info-grid">
+                        {% if property %}
+                        <div class="info-section">
+                            <h5><i class="fas fa-info-circle"></i>Thông tin cơ bản</h5>
+                            <table class="table info-table">
+                                <tr><th><i class="fas fa-hashtag me-2"></i>ID</th><td>{{ property.house_id }}</td></tr>
+                                <tr><th><i class="fas fa-map-marker-alt me-2"></i>Quận/Huyện</th><td>{{ property.district }}</td></tr>
+                                <tr><th><i class="fas fa-dollar-sign me-2"></i>Giá</th><td><strong>{{ property.price }} tỷ</strong></td></tr>
+                                <tr><th><i class="fas fa-expand-arrows-alt me-2"></i>Diện tích</th><td>{{ property.area }} m²</td></tr>
+                                <tr><th><i class="fas fa-bed me-2"></i>Phòng ngủ</th><td>{{ property.bedrooms }}</td></tr>
+                                <tr><th><i class="fas fa-bath me-2"></i>Phòng tắm</th><td>{{ property.bathrooms }}</td></tr>
+                            </table>
+                        </div>
+                        {% endif %}
+                        
+                        {% if house_prices %}
+                        <div class="info-section">
+                            <h5><i class="fas fa-chart-line"></i>Thông tin chi tiết</h5>
+                            <table class="table info-table">
+                                {% for key, value in house_prices.items() %}
+                                <tr>
+                                    <th>{{ key }}</th>
+                                    <td>{{ value }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if property and property.description %}
+                    <div class="description-section">
+                        <h5><i class="fas fa-file-alt me-2"></i>Mô tả chi tiết</h5>
+                        <p>{{ property.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="action-buttons">
+                        <div class="d-flex gap-3 flex-wrap">
+                            {% if session.get('user_id') %}
+                            <a href="{{ url_for('compare') }}?house_id1={{ property.house_id if property else house_prices['house_id'] }}" class="btn-custom btn-compare">
+                                <i class="fas fa-exchange-alt"></i> So sánh
+                            </a>
+                            {% endif %}
+                            
+                            {% if not session.get('is_admin', False) %}
+                            <a href="{{ url_for('deposit', house_id=property.house_id if property else house_prices['house_id']) }}" class="btn-custom btn-deposit">
+                                <i class="fas fa-credit-card"></i> Đặt cọc
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        {% if session.get('is_admin') %}
+                        <a href="{{ url_for('update_status', house_id=property.house_id if property else house_prices['house_id']) }}" class="btn-custom btn-admin">
+                            <i class="fas fa-cog"></i> Cập nhật trạng thái
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-card contact-card">
+                <div class="card-header-custom">
+                    <h5><i class="fas fa-phone me-2"></i>Thông tin liên hệ</h5>
+                </div>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div>
+                            <strong>Điện thoại</strong><br>
+                            <a href="tel:0123456789">0123 456 789</a>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div>
+                            <strong>Email</strong><br>
+                            <a href="mailto:contact@example.com">contact@example.com</a>
+                        </div>
+                    </div>
+                    <button class="btn-contact">
+                        <i class="fas fa-comment me-2"></i>
+                        Liên hệ tư vấn
+                    </button>
+                </div>
+            </div>
+
+            {% if similar_properties %}
+            <div class="sidebar-card similar-card">
+                <div class="card-header-custom">
+                    <h5><i class="fas fa-home me-2"></i>Bất động sản tương tự</h5>
+                </div>
+                <div class="similar-properties">
+                    {% for similar in similar_properties %}
+                    <div class="similar-item">
+                        <h6>
+                            <a href="{{ url_for('property_details', house_id=similar.house_id) }}">
+                                {{ similar.title }}
+                            </a>
+                        </h6>
+                        <div class="similar-meta">
+                            <span class="similar-district">
+                                <i class="fas fa-map-marker-alt"></i>
+                                {{ similar.district }}
+                            </span>
+                            <span class="similar-price">{{ similar.price }} tỷ</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add smooth scroll behavior
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    });
+    
+    // Add contact button functionality
+    document.querySelector('.btn-contact')?.addEventListener('click', function() {
+        // You can add contact modal or phone call functionality here
+        alert('Tính năng liên hệ sẽ được phát triển thêm!');
+    });
+    
+    // Add favorite animation
+    document.querySelector('form[action*="add_favorite"]')?.addEventListener('submit', function() {
+        const btn = this.querySelector('button');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang thêm...';
+    });
+    
+    // Enhance tables with zebra striping
+    document.querySelectorAll('.info-table tr:nth-child(even)').forEach(row => {
+        row.style.backgroundColor = 'rgba(248, 249, 250, 0.5)';
+    });
+</script>
 {% endblock %}

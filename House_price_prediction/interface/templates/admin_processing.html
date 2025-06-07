@@ -3,51 +3,716 @@
 {% block title %}Bất động sản đang xử lý{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>Danh sách bất động sản đang xử lý</h1>
+<!-- Admin Header -->
+<div class="admin-header mb-5">
+    <div class="admin-header-content">
+        <div class="admin-icon">
+            <i class="fas fa-cogs"></i>
+        </div>
+        <div class="admin-info">
+            <h1 class="admin-title">Bất Động Sản Đang Xử Lý</h1>
+            <p class="admin-subtitle">
+                {% if properties %}
+                    Có <span class="highlight-number">{{ properties|length }}</span> bất động sản đang trong quá trình xử lý
+                {% else %}
+                    Hiện không có bất động sản nào đang xử lý
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    <div class="admin-actions">
+        <button class="btn btn-success" onclick="processAll()">
+            <i class="fas fa-check-double me-2"></i>Xử lý tất cả
+        </button>
+        <button class="btn btn-primary" onclick="refreshData()">
+            <i class="fas fa-sync-alt me-2"></i>Làm mới
+        </button>
     </div>
 </div>
-<div class="row">
-    <div class="col">
-        {% if properties %}
-        <table class="table table-bordered table-hover">
-            <thead class="table-primary">
-                <tr>
-                    <th>ID</th>
-                    <th>Tiêu đề</th>
-                    <th>Quận/Huyện</th>
-                    <th>Giá</th>
-                    <th>Diện tích</th>
-                    <th>Phòng ngủ</th>
-                    <th>Phòng tắm</th>
-                    <th>User đặt cọc</th>
-                    <th>Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in properties %}
-                <tr>
-                    <td>{{ p[0] }}</td>
-                    <td>{{ p[1] }}</td>
-                    <td>{{ p[2] }}</td>
-                    <td>{{ p[3] }}</td>
-                    <td>{{ p[4] }}</td>
-                    <td>{{ p[5] }}</td>
-                    <td>{{ p[6] }}</td>
-                    <td>{{ p[7] }}</td>
-                    <td>
-                        <form action="{{ url_for('admin_cancel_processing', house_id=p[0]) }}" method="POST">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn chắc chắn muốn hủy xử lý bất động sản này?')">Hủy</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="alert alert-info">Không có bất động sản nào đang xử lý.</div>
-        {% endif %}
+
+{% if properties %}
+    <!-- Status Cards -->
+    <div class="status-cards mb-4">
+        <div class="status-card processing">
+            <div class="status-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="status-content">
+                <div class="status-number">{{ properties|length }}</div>
+                <div class="status-label">Đang xử lý</div>
+            </div>
+        </div>
+        <div class="status-card pending">
+            <div class="status-icon">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="status-content">
+                <div class="status-number">{{ properties|length }}</div>
+                <div class="status-label">Chờ xác nhận</div>
+            </div>
+        </div>
+        <div class="status-card urgent">
+            <div class="status-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="status-content">
+                <div class="status-number">0</div>
+                <div class="status-label">Khẩn cấp</div>
+            </div>
+        </div>
     </div>
-</div>
+
+    <!-- Processing Table -->
+    <div class="processing-table-container">
+        <div class="table-header">
+            <h3 class="table-title">
+                <i class="fas fa-list-alt me-2"></i>Danh sách BĐS đang xử lý
+            </h3>
+            <div class="table-controls">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="propertySearch" placeholder="Tìm kiếm BĐS..." onkeyup="searchProperties()">
+                </div>
+                <select class="form-select" id="statusFilter" onchange="filterByStatus()">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="processing">Đang xử lý</option>
+                    <option value="pending">Chờ xác nhận</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table processing-table" id="propertiesTable">
+                <thead>
+                    <tr>
+                        <th>
+                            <div class="th-content">
+                                <i class="fas fa-hashtag me-2"></i>ID
+                            </div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <i class="fas fa-home me-2"></i>Thông tin BĐS
+                            </div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <i class="fas fa-map-marker-alt me-2"></i>Vị trí
+                            </div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <i class="fas fa-user me-2"></i>Người đặt cọc
+                            </div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <i class="fas fa-clock me-2"></i>Trạng thái
+                            </div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <i class="fas fa-cog me-2"></i>Hành động
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in properties %}
+                    <tr class="property-row" data-status="processing">
+                        <td>
+                            <span class="property-id">#{{ p[0] }}</span>
+                        </td>
+                        <td>
+                            <div class="property-info">
+                                <div class="property-title">{{ p[1] }}</div>
+                                <div class="property-details">
+                                    <span class="detail-item">
+                                        <i class="fas fa-tag text-success"></i>
+                                        {{ p[3] }}
+                                    </span>
+                                    <span class="detail-item">
+                                        <i class="fas fa-ruler-combined text-info"></i>
+                                        {{ p[4] }} m²
+                                    </span>
+                                    <span class="detail-item">
+                                        <i class="fas fa-bed text-primary"></i>
+                                        {{ p[5] }} PN
+                                    </span>
+                                    <span class="detail-item">
+                                        <i class="fas fa-bath text-info"></i>
+                                        {{ p[6] }} PT
+                                    </span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="location-info">
+                                <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                                {{ p[2] }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="user-name">{{ p[7] or 'N/A' }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge processing">
+                                <i class="fas fa-clock me-1"></i>
+                                Đang xử lý
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-success btn-sm" onclick="completeProcessing('{{ p[0] }}')" title="Hoàn thành">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn btn-info btn-sm" onclick="viewDetails('{{ p[0] }}')" title="Xem chi tiết">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <form action="{{ url_for('admin_cancel_processing', house_id=p[0]) }}" 
+                                      method="POST" class="cancel-form" 
+                                      onsubmit="return confirmCancel('{{ p[1] }}')">
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Hủy xử lý">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
+    <!-- Empty State -->
+    <div class="processing-empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-clipboard-check"></i>
+        </div>
+        <h3 class="empty-title">Không có BĐS đang xử lý</h3>
+        <p class="empty-description">
+            Hiện tại không có bất động sản nào đang trong quá trình xử lý. Các giao dịch mới sẽ xuất hiện tại đây.
+        </p>
+        <div class="empty-actions">
+            <button class="btn btn-primary btn-lg" onclick="refreshData()">
+                <i class="fas fa-sync-alt me-2"></i>Làm mới dữ liệu
+            </button>
+            <a href="{{ url_for('admin_approve_posts') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-list me-2"></i>Xem tin chờ duyệt
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+<style>
+/* Admin Header */
+.admin-header {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(253, 126, 20, 0.1) 100%);
+    padding: 2rem;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.admin-header-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.admin-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    box-shadow: 0 10px 30px rgba(255, 193, 7, 0.3);
+    animation: rotate 3s ease-in-out infinite;
+}
+
+@keyframes rotate {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(5deg); }
+}
+
+.admin-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.admin-subtitle {
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.highlight-number {
+    color: #fd7e14;
+    font-weight: 700;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+/* Status Cards */
+.status-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.status-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    border-left: 4px solid;
+}
+
+.status-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.status-card.processing {
+    border-color: #ffc107;
+}
+
+.status-card.pending {
+    border-color: #6c757d;
+}
+
+.status-card.urgent {
+    border-color: #dc3545;
+}
+
+.status-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.status-card.processing .status-icon {
+    background: #ffc107;
+}
+
+.status-card.pending .status-icon {
+    background: #6c757d;
+}
+
+.status-card.urgent .status-icon {
+    background: #dc3545;
+}
+
+.status-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1;
+}
+
+.status-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Table Container */
+.processing-table-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.table-header {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.table-title {
+    color: white;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.table-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-box {
+    position: relative;
+    min-width: 200px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: none;
+    border-radius: 25px;
+    background: rgba(255,255,255,0.9);
+    font-size: 0.9rem;
+}
+
+.search-box input:focus {
+    outline: none;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+}
+
+.table-controls .form-select {
+    min-width: 150px;
+    border: none;
+    border-radius: 25px;
+    background: rgba(255,255,255,0.9);
+    padding: 0.75rem 1rem;
+}
+
+/* Processing Table */
+.processing-table {
+    margin: 0;
+    background: white;
+}
+
+.processing-table thead th {
+    background: #f8f9fa;
+    border: none;
+    padding: 1.5rem 1rem;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.th-content {
+    display: flex;
+    align-items: center;
+}
+
+.processing-table tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.processing-table tbody tr:hover {
+    background: rgba(255, 193, 7, 0.05);
+    transform: scale(1.01);
+}
+
+.processing-table td {
+    padding: 1.5rem 1rem;
+    vertical-align: middle;
+    border: none;
+}
+
+.property-id {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.property-info {
+    max-width: 300px;
+}
+
+.property-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.property-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.location-info {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    color: #495057;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+}
+
+.user-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+}
+
+.status-badge.processing {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.action-buttons .btn {
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.action-buttons .btn:hover {
+    transform: scale(1.1);
+}
+
+.cancel-form {
+    display: inline;
+    margin: 0;
+}
+
+/* Empty State */
+.processing-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.empty-icon {
+    font-size: 5rem;
+    color: #e9ecef;
+    margin-bottom: 2rem;
+}
+
+.empty-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.empty-description {
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.empty-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .admin-title {
+        font-size: 2rem;
+    }
+    
+    .status-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .table-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .table-controls {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .search-box {
+        min-width: 100%;
+    }
+    
+    .property-details {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .action-buttons {
+        justify-content: center;
+    }
+    
+    .empty-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>
+
+<script>
+// Search functionality
+function searchProperties() {
+    const input = document.getElementById('propertySearch');
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById('propertiesTable');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.getElementsByTagName('td');
+        let shouldShow = false;
+
+        for (let j = 0; j < cells.length - 1; j++) {
+            const cellText = cells[j].textContent || cells[j].innerText;
+            if (cellText.toLowerCase().indexOf(filter) > -1) {
+                shouldShow = true;
+                break;
+            }
+        }
+
+        row.style.display = shouldShow ? '' : 'none';
+    }
+}
+
+// Filter by status
+function filterByStatus() {
+    const select = document.getElementById('statusFilter');
+    const filter = select.value;
+    const rows = document.querySelectorAll('.property-row');
+
+    rows.forEach(row => {
+        if (filter === '' || row.dataset.status === filter) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Confirm cancel processing
+function confirmCancel(propertyTitle) {
+    return confirm(`Bạn có chắc chắn muốn hủy xử lý bất động sản "${propertyTitle}"?\n\nHành động này sẽ đưa BĐS về trạng thái ban đầu.`);
+}
+
+// Complete processing
+function completeProcessing(propertyId) {
+    if (confirm('Hoàn thành xử lý bất động sản này?')) {
+        alert(`Hoàn thành xử lý BĐS ID: ${propertyId}\n(Chức năng đang phát triển)`);
+    }
+}
+
+// View property details
+function viewDetails(propertyId) {
+    alert(`Xem chi tiết BĐS ID: ${propertyId}\n(Chức năng đang phát triển)`);
+}
+
+// Process all properties
+function processAll() {
+    if (confirm('Xử lý tất cả bất động sản đang chờ?')) {
+        alert('Đang xử lý tất cả BĐS...\n(Chức năng đang phát triển)');
+    }
+}
+
+// Refresh data
+function refreshData() {
+    location.reload();
+}
+
+// Add loading animations
+document.addEventListener('DOMContentLoaded', function() {
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(button => {
+        button.addEventListener('click', function() {
+            if (!this.classList.contains('btn-danger')) {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
