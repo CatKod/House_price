@@ -3,48 +3,469 @@
 {% block title %}Bất động sản yêu thích{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>Bất động sản yêu thích</h1>
+<!-- Hero Section -->
+<div class="favorites-hero mb-5">
+    <div class="hero-content">
+        <div class="hero-icon">
+            <i class="fas fa-heart"></i>
+        </div>
+        <h1 class="hero-title">
+            Bất Động Sản Yêu Thích
+        </h1>
+        <p class="hero-subtitle">
+            {% if properties %}
+                Bạn đã lưu <span class="highlight-number">{{ properties|length }}</span> bất động sản yêu thích
+            {% else %}
+                Chưa có bất động sản nào trong danh sách yêu thích
+            {% endif %}
+        </p>
+    </div>
+    <div class="hero-decoration">
+        <div class="floating-heart heart-1">♥</div>
+        <div class="floating-heart heart-2">♥</div>
+        <div class="floating-heart heart-3">♥</div>
     </div>
 </div>
 
-<div class="row">
-    {% if properties %}
+{% if properties %}
+    <!-- Favorites Grid -->
+    <div class="favorites-grid">
         {% for property in properties %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">{{ property.title }}</h5>
-                    <p class="card-text">
-                        <strong>ID:</strong> {{ property.house_id }}<br>
-                        <strong>Quận/Huyện:</strong> {{ property.district }}<br>
-                        <strong>Giá:</strong> {{ property.price }} tỷ<br>
-                        <strong>Diện tích:</strong> {{ property.area }} m²<br>
-                        <strong>Phòng ngủ:</strong> {{ property.bedrooms }}<br>
-                        <strong>Phòng tắm:</strong> {{ property.bathrooms }}
-                    </p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <a href="{{ url_for('property_details', house_id=property.house_id) }}" class="btn btn-primary">
-                            <i class="fas fa-info-circle me-2"></i>Chi tiết
-                        </a>
-                        <form action="{{ url_for('remove_favorite', house_id=property.house_id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-heart-broken me-2"></i>Xóa
-                            </button>
-                        </form>
+        <div class="favorite-card-wrapper">
+            <div class="favorite-card">
+                <div class="favorite-badge">
+                    <i class="fas fa-heart"></i>
+                </div>
+                
+                <div class="property-header">
+                    <h5 class="property-title">{{ property.title }}</h5>
+                    <div class="property-id">ID: {{ property.house_id }}</div>
+                </div>
+                
+                <div class="property-location">
+                    <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                    {{ property.district }}
+                </div>
+                
+                <div class="property-price">
+                    <i class="fas fa-tag text-success me-2"></i>
+                    <span class="price-value">{{ property.price }}</span>
+                </div>
+                
+                <div class="property-details">
+                    <div class="detail-item">
+                        <i class="fas fa-ruler-combined text-info"></i>
+                        <span>{{ property.area }} m²</span>
                     </div>
+                    <div class="detail-item">
+                        <i class="fas fa-bed text-primary"></i>
+                        <span>{{ property.bedrooms }} PN</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-bath text-info"></i>
+                        <span>{{ property.bathrooms }} PT</span>
+                    </div>
+                </div>
+                
+                <div class="property-actions">
+                    <a href="{{ url_for('property_details', house_id=property.house_id) }}" 
+                       class="btn btn-primary btn-detail">
+                        <i class="fas fa-info-circle me-2"></i>Chi tiết
+                    </a>
+                    <form action="{{ url_for('remove_favorite', house_id=property.house_id) }}" 
+                          method="POST" class="remove-form">
+                        <button type="submit" class="btn btn-outline-danger btn-remove" 
+                                onclick="return confirm('Bạn có chắc muốn xóa khỏi danh sách yêu thích?')">
+                            <i class="fas fa-heart-broken me-2"></i>Xóa
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
         {% endfor %}
-    {% else %}
-        <div class="col">
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>Bạn chưa có bất động sản yêu thích nào.
-                <a href="{{ url_for('index') }}" class="alert-link">Khám phá ngay</a>
-            </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="favorites-actions mt-5">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-search me-2"></i>Tìm thêm BĐS
+        </a>
+        <a href="{{ url_for('compare') }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-balance-scale me-2"></i>So sánh BĐS
+        </a>
+    </div>
+{% else %}
+    <!-- Empty State -->
+    <div class="empty-favorites">
+        <div class="empty-icon">
+            <i class="fas fa-heart-broken"></i>
         </div>
-    {% endif %}
-</div>
-{% endblock %} 
+        <h3 class="empty-title">Danh sách yêu thích trống</h3>
+        <p class="empty-description">
+            Bạn chưa có bất động sản yêu thích nào. Hãy khám phá và lưu những căn nhà bạn quan tâm!
+        </p>
+        <div class="empty-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-home me-2"></i>Khám phá ngay
+            </a>
+            <a href="{{ url_for('search') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-search me-2"></i>Tìm kiếm BĐS
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+<style>
+/* Favorites Hero Section */
+.favorites-hero {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(253, 126, 20, 0.1) 100%);
+    padding: 4rem 2rem;
+    border-radius: 25px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-icon {
+    font-size: 4rem;
+    color: #dc3545;
+    margin-bottom: 1rem;
+    animation: heartbeat 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.hero-subtitle {
+    font-size: 1.3rem;
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+.highlight-number {
+    color: #dc3545;
+    font-weight: 700;
+    font-size: 1.2em;
+}
+
+.hero-decoration {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.floating-heart {
+    position: absolute;
+    color: rgba(220, 53, 69, 0.1);
+    font-size: 3rem;
+    animation: float 6s ease-in-out infinite;
+}
+
+.heart-1 {
+    top: 20%;
+    left: 15%;
+    animation-delay: 0s;
+}
+
+.heart-2 {
+    top: 60%;
+    right: 20%;
+    animation-delay: 2s;
+}
+
+.heart-3 {
+    top: 30%;
+    right: 10%;
+    animation-delay: 4s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    33% { transform: translateY(-10px) rotate(5deg); }
+    66% { transform: translateY(5px) rotate(-3deg); }
+}
+
+/* Favorites Grid */
+.favorites-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.favorite-card-wrapper {
+    position: relative;
+}
+
+.favorite-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    border: 2px solid transparent;
+}
+
+.favorite-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #dc3545, #fd7e14);
+    border-radius: 20px 20px 0 0;
+}
+
+.favorite-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(220, 53, 69, 0.2);
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+.favorite-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #dc3545, #fd7e14);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.property-header {
+    margin-bottom: 1.5rem;
+    padding-right: 60px;
+}
+
+.property-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.property-id {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.property-location {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.property-price {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.price-value {
+    color: #28a745;
+    font-weight: 700;
+}
+
+.property-details {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(220, 53, 69, 0.05);
+    border-radius: 12px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.detail-item i {
+    font-size: 1.2rem;
+}
+
+.property-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-detail {
+    flex: 2;
+}
+
+.remove-form {
+    flex: 1;
+    margin: 0;
+}
+
+.btn-remove {
+    width: 100%;
+    border-color: #dc3545;
+    color: #dc3545;
+    transition: all 0.3s ease;
+}
+
+.btn-remove:hover {
+    background: #dc3545;
+    color: white;
+    transform: scale(1.05);
+}
+
+/* Favorites Actions */
+.favorites-actions {
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.favorites-actions .btn {
+    margin: 0 0.5rem;
+}
+
+/* Empty State */
+.empty-favorites {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 25px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+}
+
+.empty-icon {
+    font-size: 6rem;
+    color: #e9ecef;
+    margin-bottom: 2rem;
+    animation: fadeInOut 3s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+}
+
+.empty-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.empty-description {
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.empty-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.1rem;
+    }
+    
+    .favorites-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .property-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .property-actions .btn {
+        width: 100%;
+    }
+    
+    .empty-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .empty-actions .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 576px) {
+    .favorites-hero {
+        padding: 2rem 1rem;
+    }
+    
+    .favorite-card {
+        padding: 1.5rem;
+    }
+    
+    .property-details {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .detail-item {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+</style>
+{% endblock %}

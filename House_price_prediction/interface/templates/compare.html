@@ -3,133 +3,731 @@
 {% block title %}So sánh bất động sản{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>So sánh bất động sản</h1>
+<style>
+    .compare-hero {
+        background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+        color: white;
+        padding: 50px 0;
+        text-align: center;
+        margin-bottom: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .compare-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 10L60 35H85L66 50L72 75L50 60L28 75L34 50L15 35H40L50 10Z" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        opacity: 0.3;
+        animation: float 15s infinite linear;
+    }
+    
+    @keyframes float {
+        0% { transform: translateY(0) rotate(0deg); }
+        100% { transform: translateY(-50px) rotate(360deg); }
+    }
+    
+    .compare-hero .container {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+        margin-bottom: 0;
+        opacity: 0.9;
+    }
+    
+    .selection-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-bottom: 40px;
+    }
+    
+    .selection-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+    }
+    
+    .card-header-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px 30px;
+        text-align: center;
+    }
+    
+    .card-header-custom h4 {
+        margin: 0;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .form-section {
+        padding: 40px;
+    }
+    
+    .form-floating {
+        margin-bottom: 25px;
+        position: relative;
+    }
+    
+    .form-floating .form-control {
+        height: 65px;
+        border: 2px solid #e3e6f0;
+        border-radius: 16px;
+        font-size: 1.1rem;
+        padding: 20px 20px 8px 60px;
+        background: rgba(248, 249, 252, 0.8);
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        background: white;
+        transform: translateY(-2px);
+    }
+    
+    .form-floating label {
+        padding: 20px 20px 8px 60px;
+        color: #6c757d;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating .form-control:focus ~ label,
+    .form-floating .form-control:not(:placeholder-shown) ~ label {
+        color: #667eea;
+        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+    }
+    
+    .input-icon {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        z-index: 5;
+        font-size: 1.2rem;
+        transition: color 0.3s ease;
+    }
+    
+    .form-floating .form-control:focus ~ .input-icon {
+        color: #667eea;
+    }
+    
+    .btn-compare {
+        background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+        border: none;
+        color: white;
+        font-weight: 700;
+        font-size: 1.2rem;
+        padding: 18px 40px;
+        border-radius: 16px;
+        width: 100%;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn-compare::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .btn-compare:hover::before {
+        left: 100%;
+    }
+    
+    .btn-compare:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(255, 107, 107, 0.4);
+    }
+    
+    .comparison-results {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        margin-bottom: 40px;
+    }
+    
+    .results-header {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        padding: 25px 30px;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+    
+    .results-header h4 {
+        margin: 0;
+        font-weight: 700;
+        flex: 1;
+    }
+    
+    .btn-new-compare {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-new-compare:hover {
+        background: white;
+        color: #11998e;
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+    
+    .comparison-table {
+        padding: 0;
+        overflow: hidden;
+    }
+    
+    .table-custom {
+        margin: 0;
+        border: none;
+    }
+    
+    .table-custom thead th {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: none;
+        padding: 20px;
+        font-weight: 700;
+        color: #495057;
+        text-align: center;
+        font-size: 1.1rem;
+    }
+    
+    .table-custom thead th:first-child {
+        text-align: left;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .table-custom tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table-custom tbody tr:hover {
+        background: rgba(102, 126, 234, 0.05);
+        transform: scale(1.02);
+    }
+    
+    .table-custom tbody th {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        color: #495057;
+        font-weight: 600;
+        padding: 20px;
+        border: none;
+        border-right: 3px solid #667eea;
+        font-size: 1rem;
+    }
+    
+    .table-custom tbody td {
+        padding: 20px;
+        border: none;
+        text-align: center;
+        font-weight: 500;
+        font-size: 1.05rem;
+        position: relative;
+    }
+    
+    .table-custom tbody tr:nth-child(even) {
+        background: rgba(248, 249, 250, 0.5);
+    }
+    
+    .property-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-top: 30px;
+    }
+    
+    .property-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .property-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .property-card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .property-card-header h5 {
+        margin: 0;
+        font-weight: 700;
+    }
+    
+    .property-card-body {
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .property-id {
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+    
+    .value-comparison {
+        position: relative;
+    }
+    
+    .value-better {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-weight: 600;
+        position: relative;
+    }
+    
+    .value-better::after {
+        content: '✓';
+        position: absolute;
+        right: -10px;
+        top: -5px;
+        background: #28a745;
+        color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+    
+    .price-highlight {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #ff6b6b;
+    }
+    
+    .area-highlight {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 40px;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: #ff6b6b;
+    }
+    
+    .empty-state h3 {
+        color: #495057;
+        margin-bottom: 15px;
+    }
+    
+    .quick-tips {
+        background: rgba(255, 107, 107, 0.05);
+        border-radius: 16px;
+        padding: 25px;
+        margin-top: 30px;
+    }
+    
+    .quick-tips h6 {
+        color: #ff6b6b;
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .quick-tips ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .quick-tips li {
+        padding: 8px 0;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .quick-tips li i {
+        color: #ff6b6b;
+        width: 16px;
+    }
+    
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2rem;
+        }
+        
+        .form-section {
+            padding: 30px 20px;
+        }
+        
+        .property-cards {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .table-responsive {
+            font-size: 0.9rem;
+        }
+        
+        .table-custom thead th,
+        .table-custom tbody th,
+        .table-custom tbody td {
+            padding: 15px 10px;
+        }
+    }
+</style>
+
+<div class="compare-hero">
+    <div class="container">
+        <h1 class="hero-title">⚖️ So sánh bất động sản</h1>
+        <p class="hero-subtitle">Đưa ra quyết định thông minh với công cụ so sánh chi tiết</p>
     </div>
 </div>
 
-{% if not properties %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Chọn bất động sản để so sánh</h4>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('compare') }}">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="house_id1" class="form-label">Bất động sản thứ nhất</label>
-                            <input type="text" class="form-control" id="house_id1" name="house_id1" required
-                                value="{{ request.args.get('house_id1', '') }}"
-                                placeholder="Nhập ID bất động sản">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="house_id2" class="form-label">Bất động sản thứ hai</label>
-                            <input type="text" class="form-control" id="house_id2" name="house_id2" required
-                                placeholder="Nhập ID bất động sản">
-                        </div>
+<div class="container">
+    {% if not properties %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="selection-card">
+                <div class="card-header-custom">
+                    <h4>
+                        <i class="fas fa-search"></i>
+                        Chọn bất động sản để so sánh
+                    </h4>
+                </div>
+                <div class="form-section">
+                    <div class="empty-state">
+                        <i class="fas fa-balance-scale"></i>
+                        <h3>Bắt đầu so sánh</h3>
+                        <p>Nhập ID của 2 bất động sản để xem so sánh chi tiết</p>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-exchange-alt me-2"></i>So sánh
-                    </button>
-                </form>
+                    
+                    <form method="POST" action="{{ url_for('compare') }}" id="compareForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="house_id1" name="house_id1" required
+                                        value="{{ request.args.get('house_id1', '') }}"
+                                        placeholder="Nhập ID bất động sản thứ nhất">
+                                    <label for="house_id1">Bất động sản thứ nhất</label>
+                                    <i class="fas fa-home input-icon"></i>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="house_id2" name="house_id2" required
+                                        placeholder="Nhập ID bất động sản thứ hai">
+                                    <label for="house_id2">Bất động sản thứ hai</label>
+                                    <i class="fas fa-building input-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-compare">
+                            <i class="fas fa-exchange-alt me-2"></i>Bắt đầu so sánh
+                        </button>
+                    </form>
+                    
+                    <div class="quick-tips">
+                        <h6><i class="fas fa-lightbulb"></i>Mẹo sử dụng</h6>
+                        <ul>
+                            <li><i class="fas fa-check"></i>ID bất động sản thường là số (ví dụ: 123, 456)</li>
+                            <li><i class="fas fa-check"></i>Bạn có thể tìm ID trong danh sách hoặc URL chi tiết</li>
+                            <li><i class="fas fa-check"></i>So sánh giúp bạn chọn được bất động sản phù hợp nhất</li>
+                            <li><i class="fas fa-check"></i>Kết quả hiển thị đầy đủ thông tin để quyết định</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% else %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Kết quả so sánh</h4>
-                    <a href="{{ url_for('compare') }}" class="btn btn-outline-light">
-                        <i class="fas fa-sync-alt me-2"></i>So sánh khác
-                    </a>
-                </div>
+    {% else %}
+    <div class="comparison-results">
+        <div class="results-header">
+            <h4>
+                <i class="fas fa-chart-bar me-2"></i>
+                Kết quả so sánh chi tiết
+            </h4>
+            <a href="{{ url_for('compare') }}" class="btn-new-compare">
+                <i class="fas fa-sync-alt"></i>So sánh khác
+            </a>
+        </div>
+        <div class="comparison-table">
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead>
+                        <tr>
+                            <th>Tiêu chí so sánh</th>
+                            <th>{{ properties[0].title[:30] }}{{ '...' if properties[0].title|length > 30 else '' }}</th>
+                            <th>{{ properties[1].title[:30] }}{{ '...' if properties[1].title|length > 30 else '' }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th><i class="fas fa-hashtag me-2"></i>ID bất động sản</th>
+                            <td>
+                                <span class="property-id">{{ properties[0].house_id }}</span>
+                            </td>
+                            <td>
+                                <span class="property-id">{{ properties[1].house_id }}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-map-marker-alt me-2"></i>Quận/Huyện</th>
+                            <td>{{ properties[0].district }}</td>
+                            <td>{{ properties[1].district }}</td>
+                        </tr>                        <tr>
+                            <th><i class="fas fa-dollar-sign me-2"></i>Giá bán</th>
+                            <td class="value-comparison">
+                                <span class="price-highlight{% if properties[0].price < properties[1].price %} value-better{% endif %}">
+                                    {{ properties[0].price_formatted }}
+                                </span>
+                            </td>
+                            <td class="value-comparison">
+                                <span class="price-highlight{% if properties[1].price < properties[0].price %} value-better{% endif %}">
+                                    {{ properties[1].price_formatted }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-expand-arrows-alt me-2"></i>Diện tích</th>
+                            <td class="value-comparison">
+                                <span class="area-highlight{% if properties[0].area > properties[1].area %} value-better{% endif %}">
+                                    {{ properties[0].area }} m²
+                                </span>
+                            </td>
+                            <td class="value-comparison">
+                                <span class="area-highlight{% if properties[1].area > properties[0].area %} value-better{% endif %}">
+                                    {{ properties[1].area }} m²
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-bed me-2"></i>Phòng ngủ</th>
+                            <td class="{% if properties[0].bedrooms > properties[1].bedrooms %}value-better{% endif %}">
+                                {{ properties[0].bedrooms }} phòng
+                            </td>
+                            <td class="{% if properties[1].bedrooms > properties[0].bedrooms %}value-better{% endif %}">
+                                {{ properties[1].bedrooms }} phòng
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-bath me-2"></i>Phòng tắm</th>
+                            <td class="{% if properties[0].bathrooms > properties[1].bathrooms %}value-better{% endif %}">
+                                {{ properties[0].bathrooms }} phòng
+                            </td>
+                            <td class="{% if properties[1].bathrooms > properties[0].bathrooms %}value-better{% endif %}">
+                                {{ properties[1].bathrooms }} phòng
+                            </td>
+                        </tr>
+                        {% if properties[0].floors and properties[1].floors %}
+                        <tr>
+                            <th><i class="fas fa-layer-group me-2"></i>Số tầng</th>
+                            <td class="{% if properties[0].floors > properties[1].floors %}value-better{% endif %}">
+                                {{ properties[0].floors }} tầng
+                            </td>
+                            <td class="{% if properties[1].floors > properties[0].floors %}value-better{% endif %}">
+                                {{ properties[1].floors }} tầng
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% if properties[0].width_meters and properties[1].width_meters %}
+                        <tr>
+                            <th><i class="fas fa-arrows-alt-h me-2"></i>Chiều rộng</th>
+                            <td class="{% if properties[0].width_meters > properties[1].width_meters %}value-better{% endif %}">
+                                {{ properties[0].width_meters }} m
+                            </td>
+                            <td class="{% if properties[1].width_meters > properties[0].width_meters %}value-better{% endif %}">
+                                {{ properties[1].width_meters }} m
+                            </td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th><i class="fas fa-calculator me-2"></i>Giá/m²</th>
+                            <td class="value-comparison">
+                                {% set price_per_sqm_1 = (properties[0].price * 1000000000 / properties[0].area) | int %}
+                                <span class="{% if price_per_sqm_1 < (properties[1].price * 1000000000 / properties[1].area) | int %}value-better{% endif %}">
+                                    {{ "{:,}".format(price_per_sqm_1) }} VNĐ/m²
+                                </span>
+                            </td>
+                            <td class="value-comparison">
+                                {% set price_per_sqm_2 = (properties[1].price * 1000000000 / properties[1].area) | int %}
+                                <span class="{% if price_per_sqm_2 < price_per_sqm_1 %}value-better{% endif %}">
+                                    {{ "{:,}".format(price_per_sqm_2) }} VNĐ/m²
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tiêu chí</th>
-                                <th class="text-center">Bất động sản 1</th>
-                                <th class="text-center">Bất động sản 2</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <th>ID</th>
-                                <td class="text-center">{{ properties[0].house_id }}</td>
-                                <td class="text-center">{{ properties[1].house_id }}</td>
-                            </tr>
-                            <tr>
-                                <th>Tiêu đề</th>
-                                <td class="text-center">{{ properties[0].title }}</td>
-                                <td class="text-center">{{ properties[1].title }}</td>
-                            </tr>
-                            <tr>
-                                <th>Quận/Huyện</th>
-                                <td class="text-center">{{ properties[0].district }}</td>
-                                <td class="text-center">{{ properties[1].district }}</td>
-                            </tr>
-                            <tr>
-                                <th>Giá</th>
-                                <td class="text-center">{{ properties[0].price }} tỷ</td>
-                                <td class="text-center">{{ properties[1].price }} tỷ</td>
-                            </tr>
-                            <tr>
-                                <th>Diện tích</th>
-                                <td class="text-center">{{ properties[0].area }} m²</td>
-                                <td class="text-center">{{ properties[1].area }} m²</td>
-                            </tr>
-                            <tr>
-                                <th>Phòng ngủ</th>
-                                <td class="text-center">{{ properties[0].bedrooms }}</td>
-                                <td class="text-center">{{ properties[1].bedrooms }}</td>
-                            </tr>
-                            <tr>
-                                <th>Phòng tắm</th>
-                                <td class="text-center">{{ properties[0].bathrooms }}</td>
-                                <td class="text-center">{{ properties[1].bathrooms }}</td>
-                            </tr>
-                            {% if properties[0].floors and properties[1].floors %}
-                            <tr>
-                                <th>Số tầng</th>
-                                <td class="text-center">{{ properties[0].floors }}</td>
-                                <td class="text-center">{{ properties[1].floors }}</td>
-                            </tr>
-                            {% endif %}
-                            {% if properties[0].width_meters and properties[1].width_meters %}
-                            <tr>
-                                <th>Chiều rộng</th>
-                                <td class="text-center">{{ properties[0].width_meters }} m</td>
-                                <td class="text-center">{{ properties[1].width_meters }} m</td>
-                            </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
+        </div>
+    </div>
 
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <a href="{{ url_for('property_details', house_id=properties[0].house_id) }}" class="btn btn-primary w-100">
-                            <i class="fas fa-info-circle me-2"></i>Chi tiết bất động sản 1
-                        </a>
-                    </div>
-                    <div class="col-md-6">
-                        <a href="{{ url_for('property_details', house_id=properties[1].house_id) }}" class="btn btn-primary w-100">
-                            <i class="fas fa-info-circle me-2"></i>Chi tiết bất động sản 2
-                        </a>
-                    </div>
-                </div>
+    <div class="property-cards">
+        <a href="{{ url_for('property_details', house_id=properties[0].house_id) }}" class="property-card">
+            <div class="property-card-header">
+                <h5>
+                    <i class="fas fa-info-circle me-2"></i>
+                    Chi tiết bất động sản 1
+                </h5>
+            </div>            <div class="property-card-body">
+                <div class="property-id">ID: {{ properties[0].house_id }}</div>
+                <h6>{{ properties[0].title }}</h6>
+                <p class="text-muted mb-2">{{ properties[0].district }}</p>
+                <div class="price-highlight">{{ properties[0].price_formatted }}</div>
             </div>
-        </div>
+        </a>
+        
+        <a href="{{ url_for('property_details', house_id=properties[1].house_id) }}" class="property-card">
+            <div class="property-card-header">
+                <h5>
+                    <i class="fas fa-info-circle me-2"></i>
+                    Chi tiết bất động sản 2
+                </h5>
+            </div>
+            <div class="property-card-body">
+                <div class="property-id">ID: {{ properties[1].house_id }}</div>
+                <h6>{{ properties[1].title }}</h6>
+                <p class="text-muted mb-2">{{ properties[1].district }}</p>
+                <div class="price-highlight">{{ properties[1].price_formatted }}</div>
+            </div>
+        </a>
     </div>
+    {% endif %}
 </div>
-{% endif %}
-{% endblock %} 
+
+<script>
+    // Add form validation and enhancement
+    document.getElementById('compareForm')?.addEventListener('submit', function(e) {
+        const id1 = document.getElementById('house_id1').value.trim();
+        const id2 = document.getElementById('house_id2').value.trim();
+        
+        if (id1 === id2) {
+            e.preventDefault();
+            alert('Vui lòng chọn 2 bất động sản khác nhau để so sánh!');
+            return;
+        }
+        
+        if (!id1 || !id2) {
+            e.preventDefault();
+            alert('Vui lòng nhập đầy đủ ID của 2 bất động sản!');
+            return;
+        }
+        
+        // Add loading state
+        const submitBtn = this.querySelector('.btn-compare');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang so sánh...';
+        submitBtn.disabled = true;
+    });
+    
+    // Add input validation
+    document.querySelectorAll('input[name^="house_id"]').forEach(input => {
+        input.addEventListener('input', function() {
+            const value = this.value.trim();
+            const isValid = /^\d+$/.test(value) || value === '';
+            
+            if (!isValid && value !== '') {
+                this.style.borderColor = '#dc3545';
+                this.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.15)';
+            } else {
+                this.style.borderColor = '';
+                this.style.boxShadow = '';
+            }
+        });
+    });
+    
+    // Add comparison table animations
+    document.querySelectorAll('.table-custom tbody tr').forEach((row, index) => {
+        row.style.animationDelay = `${index * 0.1}s`;
+        row.style.animation = 'fadeInUp 0.5s ease forwards';
+    });
+    
+    // Add CSS animation keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Add hover effects for property cards
+    document.querySelectorAll('.property-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = '';
+        });
+    });
+</script>
+{% endblock %}

@@ -3,37 +3,553 @@
 {% block title %}Đăng ký{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0">Đăng ký tài khoản</h4>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('register') }}">
-                    <div class="mb-3">
-                        <label for="user_id" class="form-label">ID người dùng</label>
-                        <input type="text" class="form-control" id="user_id" name="user_id" required>
+<style>
+    .auth-container {
+        min-height: calc(100vh - 200px);
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        padding: 60px 0;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .auth-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="60" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="30" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="90" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+        opacity: 0.3;
+        animation: float 20s infinite linear;
+    }
+    
+    @keyframes float {
+        0% { transform: translateY(0) rotate(0deg); }
+        100% { transform: translateY(-100px) rotate(360deg); }
+    }
+    
+    .auth-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: none;
+        border-radius: 24px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .auth-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 35px 60px rgba(0, 0, 0, 0.2);
+    }
+    
+    .auth-header {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        padding: 40px 30px 30px;
+        text-align: center;
+        position: relative;
+    }
+    
+    .auth-header::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        border-radius: 0 0 50% 50%;
+    }
+    
+    .auth-header h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .auth-header p {
+        margin: 10px 0 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .auth-body {
+        padding: 50px 40px 40px;
+    }
+    
+    .form-floating {
+        margin-bottom: 25px;
+        position: relative;
+    }
+    
+    .form-floating .form-control {
+        height: 60px;
+        border: 2px solid #e3e6f0;
+        border-radius: 16px;
+        font-size: 1rem;
+        padding: 20px 20px 8px;
+        background: rgba(248, 249, 252, 0.8);
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating .form-control:focus {
+        border-color: #11998e;
+        box-shadow: 0 0 0 0.2rem rgba(17, 153, 142, 0.15);
+        background: white;
+        transform: translateY(-2px);
+    }
+    
+    .form-floating label {
+        padding: 20px 20px 8px;
+        color: #6c757d;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating .form-control:focus ~ label,
+    .form-floating .form-control:not(:placeholder-shown) ~ label {
+        color: #11998e;
+        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+    }
+    
+    .input-icon {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        z-index: 5;
+        transition: color 0.3s ease;
+    }
+    
+    .form-floating .form-control:focus ~ .input-icon {
+        color: #11998e;
+    }
+    
+    .btn-register {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        border: none;
+        border-radius: 16px;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+        padding: 16px 32px;
+        width: 100%;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+    
+    .btn-register::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .btn-register:hover::before {
+        left: 100%;
+    }
+    
+    .btn-register:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(17, 153, 142, 0.4);
+    }
+    
+    .btn-login {
+        background: transparent;
+        border: 2px solid #11998e;
+        color: #11998e;
+        border-radius: 16px;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 14px 32px;
+        width: 100%;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: block;
+        text-align: center;
+    }
+    
+    .btn-login:hover {
+        background: #11998e;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(17, 153, 142, 0.3);
+        text-decoration: none;
+    }
+    
+    .divider {
+        display: flex;
+        align-items: center;
+        margin: 30px 0;
+        color: #6c757d;
+    }
+    
+    .divider::before,
+    .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e3e6f0;
+    }
+    
+    .divider span {
+        padding: 0 20px;
+        font-weight: 500;
+    }
+    
+    .password-toggle {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        z-index: 5;
+        transition: color 0.3s ease;
+    }
+    
+    .password-toggle:hover {
+        color: #11998e;
+    }
+    
+    .form-floating .form-control:focus ~ .password-toggle {
+        color: #11998e;
+    }
+    
+    .welcome-text {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #6c757d;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    .password-strength {
+        margin-top: 10px;
+        font-size: 0.875rem;
+    }
+    
+    .strength-bar {
+        height: 4px;
+        background: #e3e6f0;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+    
+    .strength-fill {
+        height: 100%;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+    }
+    
+    .strength-weak .strength-fill {
+        width: 33%;
+        background: #dc3545;
+    }
+    
+    .strength-medium .strength-fill {
+        width: 66%;
+        background: #ffc107;
+    }
+    
+    .strength-strong .strength-fill {
+        width: 100%;
+        background: #28a745;
+    }
+    
+    .features-list {
+        background: rgba(17, 153, 142, 0.05);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .features-list h6 {
+        color: #11998e;
+        font-weight: 600;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .features-list ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .features-list li {
+        padding: 8px 0;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+    }
+    
+    .features-list li i {
+        color: #11998e;
+        margin-right: 10px;
+        width: 16px;
+    }
+    
+    @media (max-width: 768px) {
+        .auth-container {
+            padding: 30px 15px;
+        }
+        
+        .auth-body {
+            padding: 40px 25px 30px;
+        }
+        
+        .auth-header {
+            padding: 30px 20px 25px;
+        }
+        
+        .auth-header h2 {
+            font-size: 1.75rem;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-7 col-xl-6">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <h2>🎉 Tham gia cùng chúng tôi!</h2>
+                        <p>Tạo tài khoản để bắt đầu hành trình tìm nhà</p>
                     </div>
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Tên người dùng</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                    <div class="auth-body">
+                        <div class="welcome-text">
+                            <p>Miễn phí và chỉ mất vài phút</p>
+                        </div>
+                        
+                        <div class="features-list">
+                            <h6><i class="fas fa-star me-2"></i>Lợi ích khi đăng ký</h6>
+                            <ul>
+                                <li><i class="fas fa-check"></i>Tìm kiếm bất động sản nâng cao</li>
+                                <li><i class="fas fa-check"></i>Lưu danh sách yêu thích</li>
+                                <li><i class="fas fa-check"></i>Đăng tin bán/cho thuê</li>
+                                <li><i class="fas fa-check"></i>Nhận thông báo tin mới</li>
+                            </ul>
+                        </div>
+                        
+                        <form method="POST" action="{{ url_for('register') }}" id="registerForm">
+                            <div class="form-row">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="user_id" name="user_id" placeholder="ID người dùng" required pattern="[a-zA-Z0-9_]{3,20}">
+                                    <label for="user_id">ID người dùng</label>
+                                    <i class="fas fa-user input-icon"></i>
+                                </div>
+                                
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="username" name="username" placeholder="Tên hiển thị" required>
+                                    <label for="username">Tên hiển thị</label>
+                                    <i class="fas fa-signature input-icon"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="form-floating">
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="Số điện thoại" required pattern="[0-9]{10,11}">
+                                <label for="phone">Số điện thoại</label>
+                                <i class="fas fa-phone input-icon"></i>
+                            </div>
+                            
+                            <div class="form-floating">
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Mật khẩu" required minlength="6" onkeyup="checkPasswordStrength()">
+                                <label for="password">Mật khẩu (tối thiểu 6 ký tự)</label>
+                                <button type="button" class="password-toggle" onclick="togglePassword()">
+                                    <i class="fas fa-eye" id="toggleIcon"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="password-strength" id="passwordStrength" style="display: none;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small id="strengthText">Độ mạnh mật khẩu</small>
+                                </div>
+                                <div class="strength-bar">
+                                    <div class="strength-fill" id="strengthFill"></div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn-register">
+                                <i class="fas fa-user-plus me-2"></i>
+                                Tạo tài khoản
+                            </button>
+                        </form>
+                        
+                        <div class="divider">
+                            <span>Đã có tài khoản?</span>
+                        </div>
+                        
+                        <a href="{{ url_for('login') }}" class="btn-login">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            Đăng nhập ngay
+                        </a>
                     </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Mật khẩu</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="phone" class="form-label">Số điện thoại</label>
-                        <input type="text" class="form-control" id="phone" name="phone" required>
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">Đăng ký</button>
-                </form>
-                <div class="mt-3 text-center">
-                    <a href="{{ url_for('login') }}">Đã có tài khoản? Đăng nhập</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('toggleIcon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+    
+    function checkPasswordStrength() {
+        const password = document.getElementById('password').value;
+        const strengthElement = document.getElementById('passwordStrength');
+        const strengthText = document.getElementById('strengthText');
+        const strengthBar = strengthElement.querySelector('.strength-bar');
+        
+        if (password.length === 0) {
+            strengthElement.style.display = 'none';
+            return;
+        }
+        
+        strengthElement.style.display = 'block';
+        
+        let strength = 0;
+        let feedback = [];
+        
+        // Length check
+        if (password.length >= 8) strength += 25;
+        else feedback.push('ít nhất 8 ký tự');
+        
+        // Uppercase check
+        if (/[A-Z]/.test(password)) strength += 25;
+        else feedback.push('chữ hoa');
+        
+        // Lowercase check
+        if (/[a-z]/.test(password)) strength += 25;
+        else feedback.push('chữ thường');
+        
+        // Number or special character check
+        if (/[0-9!@#$%^&*]/.test(password)) strength += 25;
+        else feedback.push('số hoặc ký tự đặc biệt');
+        
+        // Update strength bar
+        strengthBar.className = 'strength-bar';
+        if (strength < 50) {
+            strengthBar.classList.add('strength-weak');
+            strengthText.textContent = 'Mật khẩu yếu';
+            strengthText.style.color = '#dc3545';
+        } else if (strength < 75) {
+            strengthBar.classList.add('strength-medium');
+            strengthText.textContent = 'Mật khẩu trung bình';
+            strengthText.style.color = '#ffc107';
+        } else {
+            strengthBar.classList.add('strength-strong');
+            strengthText.textContent = 'Mật khẩu mạnh';
+            strengthText.style.color = '#28a745';
+        }
+        
+        if (feedback.length > 0) {
+            strengthText.textContent += ` (cần: ${feedback.join(', ')})`;
+        }
+    }
+    
+    // Add form validation and loading state
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('.btn-register');
+        
+        // Basic validation
+        const userId = document.getElementById('user_id').value;
+        const phone = document.getElementById('phone').value;
+        const password = document.getElementById('password').value;
+        
+        if (userId.length < 3) {
+            e.preventDefault();
+            alert('ID người dùng phải có ít nhất 3 ký tự');
+            return;
+        }
+        
+        if (!/^[0-9]{10,11}$/.test(phone)) {
+            e.preventDefault();
+            alert('Số điện thoại không hợp lệ (10-11 chữ số)');
+            return;
+        }
+        
+        if (password.length < 6) {
+            e.preventDefault();
+            alert('Mật khẩu phải có ít nhất 6 ký tự');
+            return;
+        }
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang tạo tài khoản...';
+        submitBtn.disabled = true;
+    });
+    
+    // Add floating animation to form elements
+    document.querySelectorAll('.form-control').forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'translateY(-2px)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Real-time validation for user ID
+    document.getElementById('user_id').addEventListener('input', function() {
+        const value = this.value;
+        const isValid = /^[a-zA-Z0-9_]*$/.test(value) && value.length <= 20;
+        
+        if (!isValid && value !== '') {
+            this.style.borderColor = '#dc3545';
+        } else {
+            this.style.borderColor = '';
+        }
+    });
+    
+    // Real-time validation for phone number
+    document.getElementById('phone').addEventListener('input', function() {
+        const value = this.value;
+        const isValid = /^[0-9]*$/.test(value) && value.length <= 11;
+        
+        if (!isValid && value !== '') {
+            this.style.borderColor = '#dc3545';
+        } else {
+            this.style.borderColor = '';
+        }
+    });
+</script>
 {% endblock %}

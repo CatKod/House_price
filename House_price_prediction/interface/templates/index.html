@@ -1,106 +1,706 @@
 {% extends "base.html" %}
+{% from "macros.html" import pagination %}
 
 {% block title %}Trang chủ{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>Danh Sách Bất Động Sản Đang Bán</h1>
-        <p>Tổng số bất động sản: {{ total_properties }}</p>
+<!-- Hero Section -->
+<div class="hero-section mb-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    <i class="fas fa-home me-3"></i>
+                    Khám Phá Bất Động Sản Hà Nội
+                </h1>
+                <p class="hero-subtitle">
+                    Tìm kiếm ngôi nhà lý tưởng với <span class="highlight-number">{{ total_properties }}</span> bất động sản đang bán
+                </p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ total_properties }}</div>
+                        <div class="stat-label">Bất động sản</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ district_stats|length }}</div>
+                        <div class="stat-label">Quận/Huyện</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Hỗ trợ</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="hero-image">
+                <i class="fas fa-city"></i>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="row">
-    <div class="col-md-8">
+    <div class="col-lg-8">
+        <div class="content-header mb-4">
+            <h2 class="section-title">
+                <i class="fas fa-fire text-danger me-2"></i>
+                Bất Động Sản Nổi Bật
+            </h2>
+            <p class="section-subtitle">Những căn nhà được quan tâm nhiều nhất</p>
+        </div>
+
         {% if properties %}
-            <div class="row">
+            <div class="properties-grid">
                 {% for property in properties %}
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ property.title }}</h5>
-                            <p class="card-text">
-                                <strong>ID:</strong> {{ property.house_id }}<br>
-                                <strong>Quận/Huyện:</strong> {{ property.district }}<br>
-                                <strong>Giá:</strong> {{ property.price }}{% if property.price != 'Thỏa thuận' and property.price != 'Thoả thuận' %}{% endif %}<br>
-                                <strong>Diện tích:</strong> {{ property.area }} m²<br>
-                                <strong>Phòng ngủ:</strong> {{ property.bedrooms }}<br>
-                                <strong>Phòng tắm:</strong> {{ property.bathrooms }}
-                            </p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <a href="{{ url_for('property_details', house_id=property.house_id) }}" class="btn btn-primary">Xem chi tiết</a>
-                                <a href="{{ url_for('deposit', house_id=property.house_id) }}" class="btn btn-warning ms-2">Đặt cọc</a>
-                                {% if session.get('user_id') %}
-                                <form action="{{ url_for('add_favorite', house_id=property.house_id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-danger" title="Yêu thích">
-                                        <i class="fas fa-heart"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
+                <div class="property-card-wrapper">
+                    <div class="property-card">
+                        <div class="property-badge">
+                            <span class="badge bg-success">Đang bán</span>
+                        </div>
+                        
+                        <div class="property-header">
+                            <h5 class="property-title">{{ property.title }}</h5>
+                            <div class="property-id">ID: {{ property.house_id }}</div>
+                        </div>
+                        
+                        <div class="property-location">
+                            <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                            {{ property.district }}
+                        </div>
+                        
+                        <div class="property-price">
+                            <i class="fas fa-tag text-success me-2"></i>
+                            <span class="price-value">{{ property.price }}</span>
+                        </div>
+                        
+                        <div class="property-details">
+                            <div class="detail-item">
+                                <i class="fas fa-ruler-combined text-info"></i>
+                                <span>{{ property.area }} m²</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-bed text-primary"></i>
+                                <span>{{ property.bedrooms }} PN</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-bath text-info"></i>
+                                <span>{{ property.bathrooms }} PT</span>
                             </div>
                         </div>
+                        
+                        <div class="property-actions">
+                            <a href="{{ url_for('property_details', house_id=property.house_id) }}" 
+                               class="btn btn-primary btn-detail">
+                                <i class="fas fa-info-circle me-2"></i>Chi tiết
+                            </a>
+                            {% if not session.get('is_admin', False) %}
+                            <a href="{{ url_for('deposit', house_id=property.house_id) }}" 
+                               class="btn btn-warning btn-deposit">
+                                <i class="fas fa-hand-holding-usd me-2"></i>Đặt cọc
+                            </a>                            {% endif %}
+                            {% if session.get('user_id') and not session.get('is_admin') %}
+                            <form action="{{ url_for('add_favorite', house_id=property.house_id) }}" 
+                                  method="POST" class="favorite-form">
+                                <button type="submit" class="btn btn-outline-danger btn-favorite" 
+                                        title="Thêm vào yêu thích">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <!-- Pagination -->
-            <nav aria-label="Page navigation" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    {% if current_page > 1 %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('index', page=current_page-1, per_page=per_page) }}">Trước</a>
-                    </li>
-                    {% endif %}
-
-                    {% for i in range(1, total_pages + 1) %}
-                    <li class="page-item {% if i == current_page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('index', page=i, per_page=per_page) }}">{{ i }}</a>
-                    </li>
-                    {% endfor %}
-
-                    {% if current_page < total_pages %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('index', page=current_page+1, per_page=per_page) }}">Sau</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
+                </div>                {% endfor %}            </div>
+            
+            <!-- Enhanced Pagination -->
+            {{ pagination(current_page, total_pages, 'index', per_page=per_page) }}
         {% else %}
-            <div class="alert alert-info">Không có bất động sản nào đang bán.</div>
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <h4 class="empty-title">Không có bất động sản nào</h4>
+                <p class="empty-description">Hiện tại chưa có bất động sản nào đang bán. Vui lòng quay lại sau.</p>
+                <a href="{{ url_for('post_house') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>Đăng tin ngay
+                </a>
+            </div>
         {% endif %}
     </div>
 
-    <div class="col-md-4">
-        <!-- District Statistics -->
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">Thống kê theo Quận/Huyện</h5>
+    <div class="col-lg-4">
+        <!-- Quick Stats Card -->
+        <div class="stats-card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Thống kê nhanh
+                </h5>
             </div>
             <div class="card-body">
-                {% for district in district_stats %}
-                <div class="d-flex justify-content-between mb-2">
-                    <span>{{ district[0] }}</span>
-                    <span class="badge bg-primary">{{ district[1] }}</span>
+                <div class="quick-stats">
+                    <div class="quick-stat-item">
+                        <div class="stat-icon bg-primary">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">{{ total_properties }}</div>
+                            <div class="stat-label">Tổng BĐS</div>
+                        </div>
+                    </div>
+                    <div class="quick-stat-item">
+                        <div class="stat-icon bg-success">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">{{ district_stats|length }}</div>
+                            <div class="stat-label">Quận/Huyện</div>
+                        </div>
+                    </div>
                 </div>
-                {% endfor %}
+            </div>
+        </div>
+
+        <!-- District Statistics -->
+        <div class="stats-card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    Thống kê theo Quận/Huyện
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="district-stats">
+                    {% for district in district_stats %}
+                    <div class="district-stat-item">
+                        <div class="district-name">{{ district[0] }}</div>
+                        <div class="district-progress">
+                            <div class="progress">                                <div class="progress-bar bg-primary" role="progressbar" 
+                                     style="width: 75%">
+                                </div>
+                            </div>
+                        </div>
+                        <span class="district-count">{{ district[1] }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
         <!-- Average Price Statistics -->
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h5 class="card-title mb-0">Giá Trung Bình theo Quận/Huyện</h5>
+        <div class="stats-card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-dollar-sign me-2"></i>
+                    Giá Trung Bình theo Quận/Huyện
+                </h5>
             </div>
             <div class="card-body">
-                {% for stat in avg_price_stats %}
-                <div class="d-flex justify-content-between mb-2">
-                    <span>{{ stat[0] }}</span>
-                    <span class="badge bg-success">{{ "%.2f"|format(stat[1]|float / 1e9) }} tỷ</span>
+                <div class="price-stats">
+                    {% for stat in avg_price_stats %}
+                    <div class="price-stat-item">
+                        <div class="price-district">{{ stat[0] }}</div>
+                        <div class="price-value">
+                            <span class="price-amount">{{ "%.2f"|format(stat[1]|float / 1e9) }}</span>
+                            <span class="price-unit">tỷ</span>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
         </div>
     </div>
 </div>
+
+<style>
+/* Hero Section Styles */
+.hero-section {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    padding: 3rem 2rem;
+    border-radius: 25px;
+    margin-bottom: 2rem;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.hero-subtitle {
+    font-size: 1.3rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+}
+
+.highlight-number {
+    color: #667eea;
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
+.hero-stats {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    min-width: 100px;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.hero-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8rem;
+    color: #667eea;
+    opacity: 0.3;
+}
+
+/* Content Header */
+.content-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.section-subtitle {
+    font-size: 1.1rem;
+    color: #6c757d;
+}
+
+/* Properties Grid */
+.properties-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.property-card-wrapper {
+    position: relative;
+}
+
+.property-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+.property-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 20px 20px 0 0;
+}
+
+.property-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.property-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.property-header {
+    margin-bottom: 1.5rem;
+}
+
+.property-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.property-id {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.property-location {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.property-price {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.price-value {
+    color: #28a745;
+    font-weight: 700;
+}
+
+.property-details {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 12px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.detail-item i {
+    font-size: 1.2rem;
+}
+
+.property-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.btn-detail {
+    flex: 1;
+}
+
+.btn-deposit {
+    flex: 1;
+}
+
+.favorite-form {
+    margin: 0;
+}
+
+.btn-favorite {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #dc3545;
+    transition: all 0.3s ease;
+}
+
+.btn-favorite:hover {
+    background: #dc3545;
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Enhanced Pagination */
+.pagination-modern .page-link {
+    border: none;
+    border-radius: 50px;
+    margin: 0 0.25rem;
+    padding: 0.75rem 1.25rem;
+    font-weight: 500;
+    color: #667eea;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.pagination-modern .page-link:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.pagination-modern .page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.empty-icon {
+    font-size: 6rem;
+    color: #e9ecef;
+    margin-bottom: 2rem;
+}
+
+.empty-title {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.empty-description {
+    color: #6c757d;
+    margin-bottom: 2rem;
+}
+
+/* Stats Cards */
+.stats-card {
+    background: white;
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+}
+
+.stats-card .card-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 20px 20px 0 0;
+    padding: 1.5rem;
+}
+
+.stats-card .card-title {
+    color: white;
+    font-weight: 600;
+    margin: 0;
+}
+
+.quick-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.quick-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 12px;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.3rem;
+}
+
+.stat-content .stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.stat-content .stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* District Stats */
+.district-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.district-stat-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.district-name {
+    flex: 0 0 120px;
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.district-progress {
+    flex: 1;
+}
+
+.district-progress .progress {
+    height: 8px;
+    border-radius: 10px;
+    background: #e9ecef;
+}
+
+.district-progress .progress-bar {
+    border-radius: 10px;
+}
+
+.district-count {
+    flex: 0 0 40px;
+    text-align: center;
+    font-weight: 600;
+    color: #667eea;
+    font-size: 0.9rem;
+}
+
+/* Price Stats */
+.price-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.price-stat-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.price-district {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.price-value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+}
+
+.price-amount {
+    font-weight: 700;
+    color: #28a745;
+    font-size: 1.1rem;
+}
+
+.price-unit {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.1rem;
+    }
+    
+    .hero-stats {
+        justify-content: center;
+        gap: 1rem;
+    }
+    
+    .properties-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .property-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .property-actions .btn {
+        width: 100%;
+    }
+    
+    .btn-favorite {
+        width: 100%;
+        border-radius: 25px;
+        height: auto;
+        padding: 0.75rem;
+    }
+    
+    .district-name {
+        flex: 0 0 100px;
+        font-size: 0.8rem;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-section {
+        padding: 2rem 1rem;
+    }
+    
+    .property-card {
+        padding: 1.5rem;
+    }
+    
+    .property-details {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .detail-item {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+</style>
 {% endblock %}
+            </div>
+        </div>
+    </div>
+</div>
