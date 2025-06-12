@@ -1,0 +1,1382 @@
+{# =================================== #}
+{# MACROS LIBRARY FOR HOUSE PRICE APP #}
+{# =================================== #}
+
+{# Macro for displaying property cards #}
+{% macro property_card(property, show_favorite=false, show_compare=false, show_status=false) %}
+<div class="property-card">
+    <div class="card h-100 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">
+                <a href="{{ url_for('property_details', house_id=property.house_id) }}" 
+                   class="text-decoration-none text-dark">
+                    {{ property.title }}
+                </a>
+            </h5>
+            
+            <div class="property-info">
+                <p class="text-muted mb-1">
+                    <i class="fas fa-map-marker-alt"></i> 
+                    {{ property.district }}
+                </p>
+                
+                {% if property.address %}
+                <p class="text-muted mb-1">
+                    <i class="fas fa-home"></i> 
+                    {{ property.address }}
+                </p>
+                {% endif %}
+                
+                <div class="price-tag mb-2">
+                    <span class="h5 text-primary fw-bold">
+                        {% if property.price_formatted %}
+                            {{ property.price_formatted }}
+                        {% else %}
+                            {{ property.price }}
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="property-details row g-2 mb-3">
+                    <div class="col-4">
+                        <small class="text-muted">
+                            <i class="fas fa-ruler-combined"></i> 
+                            {{ property.area }} m²
+                        </small>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted">
+                            <i class="fas fa-bed"></i> 
+                            {{ property.bedrooms }} PN
+                        </small>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted">
+                            <i class="fas fa-bath"></i> 
+                            {{ property.bathrooms }} WC
+                        </small>
+                    </div>
+                </div>
+                
+                {% if property.posting_date %}
+                <p class="text-muted small mb-2">
+                    <i class="fas fa-calendar-alt"></i> 
+                    {{ property.posting_date }}
+                </p>
+                {% endif %}
+                
+                {% if show_status and property.status %}
+                <span class="badge 
+                    {% if property.status == 'Đang bán' %}bg-success
+                    {% elif property.status == 'Đang xử lý' %}bg-warning
+                    {% elif property.status == 'Đã bán' %}bg-secondary
+                    {% elif property.status == 'Chờ phê duyệt' %}bg-info
+                    {% else %}bg-light text-dark
+                    {% endif %}">
+                    {{ property.status }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if show_favorite or show_compare %}
+        <div class="card-footer bg-transparent">
+            <div class="d-flex gap-2">
+                {% if show_favorite %}
+                <form action="{{ url_for('add_favorite', house_id=property.house_id) }}" 
+                      method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-heart"></i> Yêu thích
+                    </button>
+                </form>
+                {% endif %}
+                
+                {% if show_compare %}
+                <button type="button" class="btn btn-outline-primary btn-sm compare-btn" 
+                        data-house-id="{{ property.house_id }}">
+                    <i class="fas fa-balance-scale"></i> So sánh
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Enhanced Macro for pagination with ellipsis, first/last buttons, and page input #}
+{% macro pagination(page, total_pages, endpoint, q='', per_page='', district='', price_min='', price_max='', area_min='', area_max='', bedrooms='') %}
+{% set params = {} %}
+{% if q %}{% set _ = params.update({'q': q}) %}{% endif %}
+{% if per_page %}{% set _ = params.update({'per_page': per_page}) %}{% endif %}
+{% if district %}{% set _ = params.update({'district': district}) %}{% endif %}
+{% if price_min %}{% set _ = params.update({'price_min': price_min}) %}{% endif %}
+{% if price_max %}{% set _ = params.update({'price_max': price_max}) %}{% endif %}
+{% if area_min %}{% set _ = params.update({'area_min': area_min}) %}{% endif %}
+{% if area_max %}{% set _ = params.update({'area_max': area_max}) %}{% endif %}
+{% if bedrooms %}{% set _ = params.update({'bedrooms': bedrooms}) %}{% endif %}
+
+{% if total_pages > 1 %}
+<div class="pagination-container">
+    <!-- Pagination Header -->
+    <div class="pagination-header text-center mb-3">
+        <h6 class="pagination-title mb-1">
+            <i class="fas fa-list-ol me-2"></i>Điều hướng trang
+        </h6>
+        <small class="text-muted">Trang {{ page }} trong tổng số {{ total_pages }} trang</small>
+    </div>
+    
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center mb-0">
+            {# First Page button #}
+            {% if page > 3 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for(endpoint, page=1, **params) }}" title="Trang đầu">
+                    <i class="fas fa-angle-double-left"></i>
+                    <span class="d-none d-sm-inline ms-1">Đầu</span>
+                </a>
+            </li>
+            {% endif %}
+            
+            {# Previous button #}
+            {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for(endpoint, page=page-1, **params) }}" title="Trang trước">
+                    <i class="fas fa-chevron-left"></i>
+                    <span class="d-none d-sm-inline ms-1">Trước</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">
+                    <i class="fas fa-chevron-left"></i>
+                    <span class="d-none d-sm-inline ms-1">Trước</span>
+                </span>
+            </li>
+            {% endif %}
+            
+            {# Smart page number display with ellipsis #}
+            {% if total_pages <= 7 %}
+                {# Show all pages if total is 7 or less #}
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for(endpoint, page=p, **params) }}">
+                        {{ p }}
+                        {% if p == page %}
+                        <i class="fas fa-star ms-1" style="font-size: 0.7rem;"></i>
+                        {% endif %}
+                    </a>
+                </li>
+                {% endfor %}
+            {% else %}
+                {# Complex ellipsis logic for large page counts #}
+                {% if page <= 4 %}
+                    {# Show first 5 pages, ellipsis, last page #}
+                    {% for p in range(1, 6) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for(endpoint, page=p, **params) }}">
+                            {{ p }}
+                            {% if p == page %}
+                            <i class="fas fa-star ms-1" style="font-size: 0.7rem;"></i>
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </span>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for(endpoint, page=total_pages, **params) }}">{{ total_pages }}</a>
+                    </li>                {% elif page >= total_pages - 3 %}
+                    {# Show first page, ellipsis, last 5 pages #}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for(endpoint, page=1, **params) }}">1</a>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </span>
+                    </li>
+                    {% for p in range(total_pages - 4, total_pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for(endpoint, page=p, **params) }}">
+                            {{ p }}
+                            {% if p == page %}
+                            <i class="fas fa-star ms-1" style="font-size: 0.7rem;"></i>
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% endfor %}
+                {% else %}
+                    {# Show first page, ellipsis, current ±2, ellipsis, last page #}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for(endpoint, page=1, **params) }}">1</a>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </span>                    </li>
+                    {% for p in range(page - 2, page + 3) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for(endpoint, page=p, **params) }}">
+                            {{ p }}
+                            {% if p == page %}
+                            <i class="fas fa-star ms-1" style="font-size: 0.7rem;"></i>
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </span>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for(endpoint, page=total_pages, **params) }}">{{ total_pages }}</a>
+                    </li>
+                {% endif %}
+            {% endif %}
+            
+            {# Next button #}
+            {% if page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for(endpoint, page=page+1, **params) }}" title="Trang sau">
+                    <span class="d-none d-sm-inline me-1">Tiếp</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">
+                    <span class="d-none d-sm-inline me-1">Tiếp</span>
+                    <i class="fas fa-chevron-right"></i>
+                </span>
+            </li>
+            {% endif %}
+            
+            {# Last Page button #}
+            {% if page < total_pages - 2 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for(endpoint, page=total_pages, **params) }}" title="Trang cuối">
+                    <span class="d-none d-sm-inline me-1">Cuối</span>
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    
+    {# Page input field for direct navigation #}
+    {% if total_pages > 10 %}
+    <div class="pagination-jump mt-3 text-center">
+        <form class="d-inline-flex align-items-center justify-content-center flex-wrap gap-2" onsubmit="return jumpToPage(event, '{{ endpoint }}', {{ total_pages }})">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-rocket text-primary"></i>
+                <span class="fw-semibold text-muted">Nhảy đến:</span>
+                <input type="number" 
+                       class="form-control form-control-sm" 
+                       style="width: 90px;" 
+                       min="1" 
+                       max="{{ total_pages }}" 
+                       value="{{ page }}"
+                       id="pageJumpInput"
+                       placeholder="Trang"
+                       title="Nhập số trang (1-{{ total_pages }})">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="d-none d-sm-inline ms-1">Đi</span>
+                </button>
+            </div>
+        </form>
+        <div class="pagination-info mt-2">
+            <small class="text-muted d-flex align-items-center justify-content-center gap-1">
+                <i class="fas fa-info-circle"></i>
+                Hiện tại: <strong>{{ page }}</strong> / <strong>{{ total_pages }}</strong> trang
+            </small>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Progress bar showing current position -->
+    <div class="pagination-progress mt-3">
+        <div class="progress" style="height: 4px; border-radius: 10px;">
+            <div class="progress-bar bg-gradient" 
+                 role="progressbar" 
+                 style="width: {{ (page / total_pages * 100)|round(1) }}%; background: linear-gradient(90deg, #667eea, #764ba2);"
+                 aria-valuenow="{{ page }}" 
+                 aria-valuemin="1" 
+                 aria-valuemax="{{ total_pages }}">
+            </div>
+        </div>
+        <small class="text-muted d-block text-center mt-1">
+            Tiến độ: {{ (page / total_pages * 100)|round(1) }}%
+        </small>
+    </div>
+</div>
+
+{# JavaScript for page jumping functionality #}
+<script>
+function jumpToPage(event, endpoint, totalPages) {
+    event.preventDefault();
+    const input = document.getElementById('pageJumpInput');
+    const pageNum = parseInt(input.value);
+    
+    if (isNaN(pageNum) || pageNum < 1 || pageNum > totalPages) {
+        alert('Vui lòng nhập số trang hợp lệ từ 1 đến ' + totalPages);
+        return false;
+    }
+    
+    // Get current URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('page', pageNum);
+    
+    // Navigate to the new page
+    window.location.href = window.location.pathname + '?' + urlParams.toString();
+    return false;
+}
+</script>
+
+{# CSS for enhanced pagination styling #}
+<style>
+.pagination-container {
+    margin: 30px 0;
+    padding: 25px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.pagination-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.pagination-header {
+    margin-bottom: 20px;
+}
+
+.pagination-title {
+    color: #495057;
+    font-weight: 700;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.pagination {
+    margin-bottom: 0;
+    justify-content: center;
+    gap: 5px;
+}
+
+.pagination .page-link {
+    border-radius: 12px;
+    margin: 0;
+    border: 2px solid transparent;
+    color: #495057;
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: linear-gradient(145deg, #ffffff, #f1f3f4);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    min-width: 48px;
+    text-align: center;
+    text-decoration: none !important;
+}
+
+.pagination .page-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    transition: left 0.5s;
+}
+
+.pagination .page-link:hover {
+    background: linear-gradient(145deg, #667eea, #764ba2);
+    color: white;
+    border-color: #667eea;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    z-index: 1;
+}
+
+.pagination .page-link:hover::before {
+    left: 100%;
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(145deg, #007bff, #0056b3);
+    border-color: #007bff;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,123,255,0.4);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 6px 16px rgba(0,123,255,0.4); }
+    50% { box-shadow: 0 8px 20px rgba(0,123,255,0.6); }
+    100% { box-shadow: 0 6px 16px rgba(0,123,255,0.4); }
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #adb5bd;
+    background: linear-gradient(145deg, #e9ecef, #dee2e6);
+    border-color: transparent;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.pagination .page-item.disabled .page-link:hover {
+    transform: none !important;
+    color: #adb5bd;
+    background: linear-gradient(145deg, #e9ecef, #dee2e6);
+}
+
+/* First/Last page buttons styling */
+.pagination .page-link[title="Trang đầu"],
+.pagination .page-link[title="Trang cuối"] {
+    background: linear-gradient(145deg, #28a745, #20c997);
+    color: white;
+    border-color: #28a745;
+}
+
+.pagination .page-link[title="Trang đầu"]:hover,
+.pagination .page-link[title="Trang cuối"]:hover {
+    background: linear-gradient(145deg, #20c997, #17a2b8);
+    box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+}
+
+/* Previous/Next buttons styling */
+.pagination .page-link[title="Trang trước"],
+.pagination .page-link[title="Trang sau"] {
+    background: linear-gradient(145deg, #6c757d, #495057);
+    color: white;
+    border-color: #6c757d;
+    padding: 12px 20px;
+}
+
+.pagination .page-link[title="Trang trước"]:hover,
+.pagination .page-link[title="Trang sau"]:hover {
+    background: linear-gradient(145deg, #495057, #343a40);
+    box-shadow: 0 8px 20px rgba(108, 117, 125, 0.4);
+}
+
+/* Ellipsis styling */
+.pagination .page-item.disabled .page-link:has(.fas.fa-ellipsis-h) {
+    background: transparent;
+    border: none;
+    color: #667eea;
+    font-size: 1.2rem;
+    font-weight: bold;
+    box-shadow: none;
+    padding: 12px 8px;
+    opacity: 1;
+}
+
+.pagination-jump {
+    font-size: 0.875rem;
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(255,255,255,0.7);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.pagination-jump .form-control {
+    text-align: center;
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.pagination-jump .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.pagination-jump .btn {
+    border-radius: 10px;
+    padding: 8px 16px;
+    background: linear-gradient(145deg, #667eea, #764ba2);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.pagination-jump .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+}
+
+.pagination-progress {
+    margin-top: 20px;
+}
+
+.pagination-progress .progress {
+    background-color: rgba(0,0,0,0.1);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.pagination-progress .progress-bar {
+    transition: width 0.6s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.pagination-progress .progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-image: linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, .2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, .2) 50%,
+        rgba(255, 255, 255, .2) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 10px 10px;
+    animation: move 1s linear infinite;
+}
+
+@keyframes move {
+    0% { background-position: 0 0; }
+    100% { background-position: 10px 10px; }
+}
+
+.pagination-info {
+    background: rgba(255,255,255,0.6);
+    padding: 8px 15px;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+/* Mobile responsive improvements */
+@media (max-width: 768px) {
+    .pagination-container {
+        margin: 20px 0;
+        padding: 20px;
+    }
+    
+    .pagination .page-link {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        min-width: 40px;
+    }
+    
+    .pagination-jump {
+        padding: 15px;
+        margin-top: 15px;
+    }
+    
+    .pagination-jump .d-flex {
+        flex-direction: column;
+        align-items: center !important;
+        gap: 10px;
+    }
+    
+    .pagination-jump .form-control {
+        width: 80px !important;
+        margin: 0 !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .pagination {
+        gap: 2px;
+    }
+    
+    .pagination .page-link {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        min-width: 36px;
+    }
+    
+    /* Hide some page numbers on very small screens */
+    .pagination .page-item:not(.active):not(:first-child):not(:last-child):not(:nth-child(2)):not(:nth-last-child(2)) .page-link {
+        display: none;
+    }
+    
+    .pagination-header {
+        margin-bottom: 15px;
+    }
+    
+    .pagination-title {
+        font-size: 1rem;
+    }
+}
+
+/* Glass morphism effect for modern browsers */
+@supports (backdrop-filter: blur(10px)) {
+    .pagination-container {
+        background: rgba(248, 249, 250, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .pagination-container {
+        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+    }
+    
+    .pagination .page-link {
+        background: linear-gradient(145deg, #4a5568, #2d3748);
+        color: #e2e8f0;
+    }
+    
+    .pagination .page-link:hover {
+        background: linear-gradient(145deg, #667eea, #764ba2);
+    }
+    
+    .pagination-jump {
+        background: rgba(45, 55, 72, 0.7);
+        color: #e2e8f0;
+    }
+    
+    .pagination-title {
+        color: #e2e8f0;
+    }
+}
+
+/* Hover animations for the whole container */
+.pagination-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+}
+</style>
+{% endif %}
+{% endmacro %}
+
+{# Macro for flash messages #}
+{% macro flash_messages() %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-messages mb-4">
+            {% for category, message in messages %}
+                <div class="alert 
+                    {% if category == 'error' %}alert-danger
+                    {% elif category == 'warning' %}alert-warning
+                    {% elif category == 'info' %}alert-info
+                    {% elif category == 'success' %}alert-success
+                    {% else %}alert-primary
+                    {% endif %} 
+                    alert-dismissible fade show" role="alert">
+                    {% if category == 'error' %}
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% elif category == 'warning' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% elif category == 'info' %}
+                        <i class="fas fa-info-circle me-2"></i>
+                    {% elif category == 'success' %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+{% endmacro %}
+
+{# Macro for form input groups #}
+{% macro form_input(name, label, type="text", value="", placeholder="", required=false, readonly=false, help_text="") %}
+<div class="mb-3">
+    <label for="{{ name }}" class="form-label">
+        {{ label }}
+        {% if required %}<span class="text-danger">*</span>{% endif %}
+    </label>
+    
+    {% if type == "textarea" %}
+    <textarea class="form-control" 
+              id="{{ name }}" 
+              name="{{ name }}" 
+              placeholder="{{ placeholder }}"
+              {% if required %}required{% endif %}
+              {% if readonly %}readonly{% endif %}>{{ value }}</textarea>
+    {% elif type == "select" %}
+    <select class="form-select" 
+            id="{{ name }}" 
+            name="{{ name }}"
+            {% if required %}required{% endif %}
+            {% if readonly %}disabled{% endif %}>
+        {{ caller() }}
+    </select>
+    {% else %}
+    <input type="{{ type }}" 
+           class="form-control" 
+           id="{{ name }}" 
+           name="{{ name }}" 
+           value="{{ value }}"
+           placeholder="{{ placeholder }}"
+           {% if required %}required{% endif %}
+           {% if readonly %}readonly{% endif %}>
+    {% endif %}
+    
+    {% if help_text %}
+    <div class="form-text">{{ help_text }}</div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Macro for property status badge #}
+{% macro status_badge(status) %}
+<span class="badge 
+    {% if status == 'Đang bán' %}bg-success
+    {% elif status == 'Đang xử lý' %}bg-warning text-dark
+    {% elif status == 'Đã bán' %}bg-secondary
+    {% elif status == 'Chờ phê duyệt' %}bg-info
+    {% else %}bg-light text-dark
+    {% endif %}">
+    <i class="fas 
+        {% if status == 'Đang bán' %}fa-home
+        {% elif status == 'Đang xử lý' %}fa-clock
+        {% elif status == 'Đã bán' %}fa-check
+        {% elif status == 'Chờ phê duyệt' %}fa-hourglass-half
+        {% else %}fa-question
+        {% endif %} me-1"></i>
+    {{ status }}
+</span>
+{% endmacro %}
+
+{# Macro for loading spinner #}
+{% macro loading_spinner(size="md", text="Đang tải...") %}
+<div class="text-center p-3">
+    <div class="spinner-border 
+        {% if size == 'sm' %}spinner-border-sm
+        {% elif size == 'lg' %}spinner-border-lg
+        {% endif %}" role="status">
+        <span class="visually-hidden">{{ text }}</span>
+    </div>
+    {% if text %}
+    <div class="mt-2 text-muted">{{ text }}</div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Macro for confirmation modal #}
+{% macro confirm_modal(modal_id, title, message, confirm_text="Xác nhận", cancel_text="Hủy") %}
+<div class="modal fade" id="{{ modal_id }}" tabindex="-1" aria-labelledby="{{ modal_id }}Label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="{{ modal_id }}Label">{{ title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {{ message }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ cancel_text }}</button>
+                <button type="button" class="btn btn-danger" id="{{ modal_id }}Confirm">{{ confirm_text }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro for property details table #}
+{% macro property_details_table(property) %}
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <tbody>            {% if property.address %}
+            <tr>
+                <th scope="row" class="bg-light property-label">
+                    <i class="fas fa-map-marker-alt text-primary me-2"></i>Địa chỉ
+                </th>
+                <td>{{ property.address }}</td>
+            </tr>
+            {% endif %}
+            
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-map text-primary me-2"></i>Quận/Huyện
+                </th>
+                <td>{{ property.district }}</td>
+            </tr>
+            
+            {% if property.post_type %}
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-tag text-primary me-2"></i>Loại tin
+                </th>
+                <td>{{ property.post_type }}</td>
+            </tr>
+            {% endif %}
+            
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-dollar-sign text-primary me-2"></i>Giá
+                </th>
+                <td class="fw-bold text-primary">
+                    {% if property.price_formatted %}
+                        {{ property.price_formatted }}
+                    {% else %}
+                        {{ property.price }}
+                    {% endif %}
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-ruler-combined text-primary me-2"></i>Diện tích
+                </th>
+                <td>{{ property.area }} m²</td>
+            </tr>
+            
+            {% if property.direction %}
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-compass text-primary me-2"></i>Hướng
+                </th>
+                <td>{{ property.direction }}</td>
+            </tr>
+            {% endif %}
+            
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-bed text-primary me-2"></i>Phòng ngủ
+                </th>
+                <td>{{ property.bedrooms }}</td>
+            </tr>
+            
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-bath text-primary me-2"></i>Phòng tắm
+                </th>
+                <td>{{ property.bathrooms }}</td>
+            </tr>
+            
+            {% if property.floors %}
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-building text-primary me-2"></i>Số tầng
+                </th>
+                <td>{{ property.floors }}</td>
+            </tr>
+            {% endif %}
+            
+            {% if property.width_meters %}
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-arrows-alt-h text-primary me-2"></i>Chiều rộng
+                </th>
+                <td>{{ property.width_meters }} m</td>
+            </tr>
+            {% endif %}
+            
+            {% if property.legal %}
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-file-contract text-primary me-2"></i>Pháp lý
+                </th>
+                <td>{{ property.legal }}</td>
+            </tr>
+            {% endif %}
+            
+            {% if property.interior %}
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-couch text-primary me-2"></i>Nội thất
+                </th>
+                <td>{{ property.interior }}</td>
+            </tr>
+            {% endif %}
+            
+            {% if property.entrancewidth %}
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-door-open text-primary me-2"></i>Lối vào
+                </th>
+                <td>{{ property.entrancewidth }} m</td>
+            </tr>
+            {% endif %}
+            
+            {% if property.posting_date %}
+            <tr>
+                <th scope="row" class="bg-light">
+                    <i class="fas fa-calendar-alt text-primary me-2"></i>Ngày đăng
+                </th>
+                <td>{{ property.posting_date }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+{# Macro for property row display (similar to search.html format) #}
+{% macro property_row(property, show_actions=true, show_status=false) %}
+<div class="border-bottom py-3">
+    <div class="row align-items-center">
+        <div class="col-md-7">
+            <h5 class="mb-1">
+                <a href="{{ url_for('property_details', house_id=property.house_id) }}" class="text-decoration-none">
+                    {{ property.title }}
+                </a>
+            </h5>
+            <p class="text-muted mb-2">
+                <i class="fas fa-map-marker-alt"></i> 
+                {{ property.address if property.address else property.district }}
+            </p>
+            <div class="row g-3">
+                {% if property.post_type is defined %}
+                <div class="col-auto">
+                    <span class="badge bg-info">{{ property.post_type }}</span>
+                </div>
+                {% endif %}
+                {% if property.direction is defined and property.direction %}
+                <div class="col-auto">
+                    <small class="text-muted"><i class="fas fa-compass"></i> {{ property.direction }}</small>
+                </div>
+                {% endif %}
+                <div class="col-auto">
+                    <small class="text-muted"><i class="fas fa-home"></i> {{ property.area }} m²</small>
+                </div>
+                <div class="col-auto">
+                    <small class="text-muted"><i class="fas fa-bed"></i> {{ property.bedrooms }} PN</small>
+                </div>
+                <div class="col-auto">
+                    <small class="text-muted"><i class="fas fa-bath"></i> {{ property.bathrooms }} PT</small>
+                </div>
+                {% if property.floors is defined %}
+                <div class="col-auto">
+                    <small class="text-muted"><i class="fas fa-building"></i> {{ property.floors }} tầng</small>
+                </div>
+                {% endif %}
+                {% if property.width_meters is defined %}
+                <div class="col-auto">
+                    <small class="text-muted"><i class="fas fa-arrows-alt-h"></i> {{ property.width_meters }}m</small>
+                </div>
+                {% endif %}
+                {% if property.legal is defined %}
+                <div class="col-auto">
+                    <small class="text-muted"><i class="fas fa-file-contract"></i> {{ property.legal }}</small>
+                </div>
+                {% endif %}
+                {% if property.interior is defined %}
+                <div class="col-auto">
+                    <small class="text-muted"><i class="fas fa-couch"></i> {{ property.interior }}</small>
+                </div>
+                {% endif %}
+                {% if property.entrance_width is defined %}
+                <div class="col-auto">
+                    <small class="text-muted"><i class="fas fa-door-open"></i> {{ property.entrance_width }}m</small>
+                </div>
+                {% endif %}
+            </div>
+            {% if property.posting_date is defined %}
+            <small class="text-muted d-block mt-2">
+                <i class="fas fa-calendar"></i> {{ property.posting_date }}
+            </small>
+            {% endif %}
+        </div>
+        <div class="col-md-3 text-center">
+            <h4 class="text-success mb-2">
+                {% if property.price_formatted is defined %}
+                    {{ property.price_formatted }}
+                {% else %}
+                    {{ property.price }} tỷ
+                {% endif %}
+            </h4>
+            {% if show_status and property.status is defined %}
+                {{ status_badge(property.status) }}
+            {% endif %}
+        </div>
+        {% if show_actions %}
+        <div class="col-md-2">
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('property_details', house_id=property.house_id) }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-eye"></i> Chi tiết
+                </a>
+                {% if session.user_id %}
+                <form method="POST" action="{{ url_for('add_favorite', house_id=property.house_id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                        <i class="fas fa-heart"></i> Yêu thích
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro for search filters form #}
+{% macro search_filters() %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-filter"></i> Bộ lọc tìm kiếm
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('search') }}">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="min_price" class="form-label">Giá từ (tỷ)</label>
+                        <input type="number" class="form-control" id="min_price" name="min_price" 
+                               value="{{ request.args.get('min_price', '') }}" placeholder="VD: 1.5" step="0.1">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="max_price" class="form-label">Giá đến (tỷ)</label>
+                        <input type="number" class="form-control" id="max_price" name="max_price" 
+                               value="{{ request.args.get('max_price', '') }}" placeholder="VD: 10" step="0.1">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="min_area" class="form-label">Diện tích từ (m²)</label>
+                        <input type="number" class="form-control" id="min_area" name="min_area" 
+                               value="{{ request.args.get('min_area', '') }}" placeholder="VD: 50">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="max_area" class="form-label">Diện tích đến (m²)</label>
+                        <input type="number" class="form-control" id="max_area" name="max_area" 
+                               value="{{ request.args.get('max_area', '') }}" placeholder="VD: 200">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="bedrooms" class="form-label">Số phòng ngủ</label>
+                        <select class="form-select" id="bedrooms" name="bedrooms">
+                            <option value="">Chọn số phòng ngủ</option>
+                            <option value="1" {% if request.args.get('bedrooms') == '1' %}selected{% endif %}>1 phòng</option>
+                            <option value="2" {% if request.args.get('bedrooms') == '2' %}selected{% endif %}>2 phòng</option>
+                            <option value="3" {% if request.args.get('bedrooms') == '3' %}selected{% endif %}>3 phòng</option>
+                            <option value="4" {% if request.args.get('bedrooms') == '4' %}selected{% endif %}>4+ phòng</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="district" class="form-label">Quận/Huyện</label>
+                        <select class="form-select" id="district" name="district">
+                            <option value="">Chọn quận/huyện</option>
+                            <option value="Ba Đình" {% if request.args.get('district') == 'Ba Đình' %}selected{% endif %}>Ba Đình</option>
+                            <option value="Hoàn Kiếm" {% if request.args.get('district') == 'Hoàn Kiếm' %}selected{% endif %}>Hoàn Kiếm</option>
+                            <option value="Cầu Giấy" {% if request.args.get('district') == 'Cầu Giấy' %}selected{% endif %}>Cầu Giấy</option>
+                            <option value="Đống Đa" {% if request.args.get('district') == 'Đống Đa' %}selected{% endif %}>Đống Đa</option>
+                            <option value="Hai Bà Trưng" {% if request.args.get('district') == 'Hai Bà Trưng' %}selected{% endif %}>Hai Bà Trưng</option>
+                            <option value="Hoàng Mai" {% if request.args.get('district') == 'Hoàng Mai' %}selected{% endif %}>Hoàng Mai</option>
+                            <option value="Thanh Xuân" {% if request.args.get('district') == 'Thanh Xuân' %}selected{% endif %}>Thanh Xuân</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="post_type" class="form-label">Loại tin</label>
+                        <select class="form-select" id="post_type" name="post_type">
+                            <option value="">Chọn loại tin</option>
+                            <option value="Bán" {% if request.args.get('post_type') == 'Bán' %}selected{% endif %}>Nhà bán</option>
+                            <option value="Cho thuê" {% if request.args.get('post_type') == 'Cho thuê' %}selected{% endif %}>Cho thuê</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="fas fa-search"></i> Tìm kiếm
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro for empty state display #}
+{% macro empty_state(icon="fas fa-home", title="Không tìm thấy kết quả", message="Thử thay đổi bộ lọc tìm kiếm hoặc từ khóa.", action_url="", action_text="") %}
+<div class="text-center py-5">
+    <i class="{{ icon }} fa-3x text-muted mb-3"></i>
+    <h4 class="text-muted">{{ title }}</h4>
+    <p class="text-muted">{{ message }}</p>
+    {% if action_url and action_text %}
+    <a href="{{ action_url }}" class="btn btn-primary">{{ action_text }}</a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Macro for price comparison chart (for compare page) #}
+{% macro price_comparison_chart(properties) %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Biểu đồ so sánh giá</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="priceComparisonChart" width="400" height="200"></canvas>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('priceComparisonChart');
+    if (ctx) {
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [
+                    {% for property in properties %}
+                    'BĐS {{ loop.index }}{% if property.title %} - {{ property.title|slice(0, 20) }}...{% endif %}',
+                    {% endfor %}
+                ],
+                datasets: [{
+                    label: 'Giá (tỷ VNĐ)',
+                    data: [
+                        {% for property in properties %}
+                        {{ property.price }},
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Giá (tỷ VNĐ)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Giá: ' + context.parsed.y + ' tỷ VNĐ';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endmacro %}
+
+{# Macro for area comparison chart #}
+{% macro area_comparison_chart(properties) %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-chart-area"></i> Biểu đồ so sánh diện tích</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="areaComparisonChart" width="400" height="200"></canvas>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('areaComparisonChart');
+    if (ctx) {
+        const chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    {% for property in properties %}
+                    'BĐS {{ loop.index }}',
+                    {% endfor %}
+                ],
+                datasets: [{
+                    label: 'Diện tích (m²)',
+                    data: [
+                        {% for property in properties %}
+                        {{ property.area }},
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + ' m²';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endmacro %}
+
+{# Macro for price per square meter comparison #}
+{% macro price_per_sqm_comparison(properties) %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-calculator"></i> Giá/m² so sánh</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>BĐS</th>
+                        <th>Giá</th>
+                        <th>Diện tích</th>
+                        <th>Giá/m²</th>
+                        <th>Đánh giá</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set prices_per_sqm = [] %}
+                    {% for property in properties %}
+                        {% set price_per_sqm = (property.price * 1000000000) / property.area %}
+                        {% set _ = prices_per_sqm.append(price_per_sqm) %}
+                    {% endfor %}
+                    {% set avg_price_per_sqm = prices_per_sqm | sum / prices_per_sqm | length %}
+                    
+                    {% for property in properties %}
+                        {% set price_per_sqm = (property.price * 1000000000) / property.area %}
+                        <tr>
+                            <td>
+                                <strong>BĐS {{ loop.index }}</strong><br>
+                                <small class="text-muted">{{ property.title|slice(0, 30) }}...</small>
+                            </td>
+                            <td>
+                                {% if property.price_formatted %}
+                                    {{ property.price_formatted }}
+                                {% else %}
+                                    {{ property.price }} tỷ
+                                {% endif %}
+                            </td>
+                            <td>{{ property.area }} m²</td>
+                            <td>
+                                <strong>{{ "{:,.0f}".format(price_per_sqm) }} VNĐ/m²</strong>
+                            </td>
+                            <td>
+                                {% if price_per_sqm < avg_price_per_sqm * 0.9 %}
+                                    <span class="badge bg-success">Rẻ</span>
+                                {% elif price_per_sqm > avg_price_per_sqm * 1.1 %}
+                                    <span class="badge bg-danger">Đắt</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Trung bình</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="3"><strong>Giá trung bình</strong></td>
+                        <td><strong>{{ "{:,.0f}".format(avg_price_per_sqm) }} VNĐ/m²</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Macro for breadcrumb navigation #}
+{% macro breadcrumb(items) %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        {% for item in items %}
+            {% if loop.last %}
+                <li class="breadcrumb-item active" aria-current="page">{{ item.text }}</li>
+            {% else %}
+                <li class="breadcrumb-item">
+                    <a href="{{ item.url }}">{{ item.text }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+{% endmacro %}

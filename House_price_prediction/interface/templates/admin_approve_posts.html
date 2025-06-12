@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import render_pagination %}
+{% from "macros.html" import pagination %}
 
 {% block title %}Duyệt bài đăng bất động sản{% endblock %}
 
@@ -171,11 +171,9 @@
                 </table>
             </div>
         </div>
-        
-        <!-- Pagination -->
-        {% if total_pages > 1 %}
+          <!-- Pagination -->        {% if total_pages > 1 %}
         <div class="card-footer bg-light border-0 py-4">
-            {{ render_pagination('admin_approve_posts', page, total_pages) }}
+            {{ pagination(page, total_pages, 'admin_approve_posts') }}
         </div>
         {% endif %}
     </div>

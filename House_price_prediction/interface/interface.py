@@ -208,11 +208,13 @@ def property_details(house_id):
                 'area': property_row[4],
                 'bedrooms': property_row[5],
                 'bathrooms': property_row[6]
-            }
-
-        house_prices = None
+            }        
+            house_prices = None
         if house_prices_row:
             house_prices = dict(zip(house_prices_columns, house_prices_row))
+            # Format the price if it exists in house_prices
+            if 'Price' in house_prices:
+                house_prices['Price'] = format_price(house_prices['Price'])
 
         cur.close()
         conn.close()
@@ -299,9 +301,7 @@ def search():
                 'area': prop[4],
                 'bedrooms': prop[5],
                 'bathrooms': prop[6]
-            })
-
-        # Lấy danh sách quận/huyện cho dropdown
+            })        # Lấy danh sách quận/huyện cho dropdown
         cur.execute('SELECT DISTINCT district FROM public.property ORDER BY district')
         districts = [row[0] for row in cur.fetchall()]
 
@@ -316,7 +316,12 @@ def search():
                              total_properties=total_properties,
                              per_page=per_page,
                              districts=districts,
-                             selected_district=district)
+                             selected_district=district,
+                             price_min=price_min,
+                             price_max=price_max,
+                             area_min=area_min,
+                             area_max=area_max,
+                             bedrooms=bedrooms)
 
     except Exception as e:
         flash(f'Error: {str(e)}', 'error')
@@ -364,6 +369,11 @@ def predict():
 @app.route('/compare', methods=['GET', 'POST'])
 @login_required
 def compare():
+    # Redirect admin users away from compare functionality
+    if session.get('is_admin'):
+        flash('Chức năng so sánh không khả dụng cho admin.', 'info')
+        return redirect(url_for('index'))
+        
     if request.method == 'POST':
         try:
             house_id1 = request.form['house_id1']
@@ -423,6 +433,11 @@ def compare():
 @app.route('/favorites')
 @login_required
 def favorites():
+    # Redirect admin users away from favorites functionality
+    if session.get('is_admin'):
+        flash('Chức năng yêu thích không khả dụng cho admin.', 'info')
+        return redirect(url_for('index'))
+        
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -461,6 +476,11 @@ def favorites():
 @app.route('/add_favorite/<house_id>', methods=['POST'])
 @login_required
 def add_favorite(house_id):
+    # Redirect admin users away from favorites functionality
+    if session.get('is_admin'):
+        flash('Chức năng yêu thích không khả dụng cho admin.', 'info')
+        return redirect(url_for('property_details', house_id=house_id))
+        
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -487,6 +507,11 @@ def add_favorite(house_id):
 @app.route('/remove_favorite/<house_id>', methods=['POST'])
 @login_required
 def remove_favorite(house_id):
+    # Redirect admin users away from favorites functionality
+    if session.get('is_admin'):
+        flash('Chức năng yêu thích không khả dụng cho admin.', 'info')
+        return redirect(url_for('property_details', house_id=house_id))
+        
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -769,8 +794,7 @@ def post_house():
                     new_house_id = "00001"
                 
                 current_date = datetime.now().strftime("%Y-%m-%d")
-                
-                # Insert into house_prices table
+                  # Insert into house_prices table
                 cur.execute("""
                     INSERT INTO public.house_prices 
                     (house_id, "Title", "Address", "District", "PostingDate", "PostType", "Price", 
@@ -779,18 +803,11 @@ def post_house():
                 """, (new_house_id, title, address, district, current_date, post_type, price, 
                       area, direction, bedrooms, bathrooms, floors, width_meters, legal, interior, entrancewidth))
                 
-                # Insert into property table (simplified view)
+                # Insert status as 'Đang bán' with poster_id
                 cur.execute("""
-                    INSERT INTO public.property 
-                    (house_id, title, district, price, area, bedrooms, bathrooms)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (new_house_id, title, district, price, area, bedrooms, bathrooms))
-                
-                # Insert status as 'Đang bán'
-                cur.execute("""
-                    INSERT INTO public.statues (house_id, statue)
-                    VALUES (%s, 'Đang bán')
-                """, (new_house_id,))
+                    INSERT INTO public.statues (house_id, statue, poster_id)
+                    VALUES (%s, 'Đang bán', %s)
+                """, (new_house_id, session['user_id']))
                 
                 conn.commit()
                 flash('Bài đăng đã được thêm thành công!', 'success')
@@ -814,15 +831,14 @@ def post_house():
                     new_house_id = "t0001"
                 
                 current_date = datetime.now().strftime("%Y-%m-%d")
-                
-                # Insert into wait_for_admin table
+                  # Insert into wait_for_admin table with poster_id
                 cur.execute("""
                     INSERT INTO public.wait_for_admin 
                     (house_id, "Title", "Address", "District", "PostingDate", "PostType", "Price", 
-                     "Area", "Direction", "Bedrooms", "Bathrooms", "Floors", "Width_meters", "Legal", "Interior", "Entrancewidth")
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     "Area", "Direction", "Bedrooms", "Bathrooms", "Floors", "Width_meters", "Legal", "Interior", "Entrancewidth", poster_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (new_house_id, title, address, district, current_date, post_type, price, 
-                      area, direction, bedrooms, bathrooms, floors, width_meters, legal, interior, entrancewidth))
+                      area, direction, bedrooms, bathrooms, floors, width_meters, legal, interior, entrancewidth, session['user_id']))
                 
                 conn.commit()
                 flash('Bài đăng đã được gửi để chờ admin phê duyệt!', 'success')
@@ -921,8 +937,7 @@ def approve_post(house_id):
             new_house_id = f"{last_id + 1:05d}"
         else:
             new_house_id = "00001"
-        
-        # Move to house_prices table with new ID
+          # Move to house_prices table with new ID
         cur.execute("""
             INSERT INTO public.house_prices 
             (house_id, "Title", "Address", "District", "PostingDate", "PostType", "Price", 
@@ -932,18 +947,12 @@ def approve_post(house_id):
               post_data[5], post_data[6], post_data[7], post_data[8], post_data[9], 
               post_data[10], post_data[11], post_data[12], post_data[13], post_data[14], post_data[15]))
         
-        # Insert into property table
+        # Insert status as 'Đang bán' with original poster_id
+        original_poster_id = post_data[17] if len(post_data) > 17 else 'admin'  # poster_id is at index 17
         cur.execute("""
-            INSERT INTO public.property 
-            (house_id, title, district, price, area, bedrooms, bathrooms)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (new_house_id, post_data[1], post_data[3], post_data[6], post_data[7], post_data[9], post_data[10]))
-        
-        # Insert status as 'Đang bán'
-        cur.execute("""
-            INSERT INTO public.statues (house_id, statue)
-            VALUES (%s, 'Đang bán')
-        """, (new_house_id,))
+            INSERT INTO public.statues (house_id, statue, poster_id)
+            VALUES (%s, 'Đang bán', %s)
+        """, (new_house_id, original_poster_id))
         
         # Remove from wait_for_admin
         cur.execute("DELETE FROM public.wait_for_admin WHERE house_id = %s", (house_id,))
@@ -1031,58 +1040,90 @@ def my_posts():
         pending_posts = []
         approved_posts = []
         
-        if not session.get('is_admin'):
-            # Get pending posts from wait_for_admin (for regular users)
+        # Get current user ID (for regular users) or admin status
+        current_user_id = session.get('user_id')
+        is_admin = session.get('is_admin', False)
+        
+        # Get pending posts from wait_for_admin table
+        if is_admin:
+            # Admin can see all pending posts
             cur.execute("""
-                SELECT house_id, "Title", "District", "Price", "Area", "Bedrooms", "Bathrooms", "PostingDate"
+                SELECT house_id, "Title", "District", "Price", "Area", "Bedrooms", "Bathrooms", "PostingDate", poster_id
                 FROM public.wait_for_admin
                 ORDER BY "PostingDate" DESC
             """)
-            pending_data = cur.fetchall()
-            
-            for post in pending_data:
-                pending_posts.append({
-                    'house_id': post[0],
-                    'title': post[1],
-                    'district': post[2],
-                    'price': format_price(post[3]),
-                    'area': post[4],
-                    'bedrooms': post[5],
-                    'bathrooms': post[6],
-                    'posting_date': post[7],
-                    'status': 'Chờ phê duyệt'
-                })
-        
-        # Note: We could track approved posts by adding a user_id field to house_prices in future
-        # For now, we'll show admin that all posts in house_prices are their approved posts
-        if session.get('is_admin'):
+        else:
+            # Regular users can only see their own pending posts
             cur.execute("""
-                SELECT house_id, "Title", "District", "Price", "Area", "Bedrooms", "Bathrooms", "PostingDate"
-                FROM public.house_prices
+                SELECT house_id, "Title", "District", "Price", "Area", "Bedrooms", "Bathrooms", "PostingDate", poster_id
+                FROM public.wait_for_admin
+                WHERE poster_id = %s
                 ORDER BY "PostingDate" DESC
-                LIMIT 20
+            """, (current_user_id,))
+        
+        pending_data = cur.fetchall()
+        
+        for post in pending_data:
+            pending_posts.append({
+                'house_id': post[0],
+                'title': post[1],
+                'district': post[2],
+                'price': format_price(post[3]),
+                'area': post[4],
+                'bedrooms': post[5],
+                'bathrooms': post[6],
+                'posting_date': post[7],
+                'poster_id': post[8],
+                'status': 'Chờ phê duyệt'
+            })
+        
+        # Get approved posts from house_prices table (joined with statues for poster_id)
+        if is_admin:
+            # Admin can see all approved posts
+            cur.execute("""
+                SELECT hp.house_id, hp."Title", hp."District", hp."Price", hp."Area", 
+                       hp."Bedrooms", hp."Bathrooms", hp."PostingDate", s.poster_id
+                FROM public.house_prices hp
+                JOIN public.statues s ON hp.house_id = s.house_id
+                WHERE s.statue = 'Đang bán'
+                ORDER BY hp."PostingDate" DESC
+                LIMIT 50
             """)
-            approved_data = cur.fetchall()
-            
-            for post in approved_data:
-                approved_posts.append({
-                    'house_id': post[0],
-                    'title': post[1],
-                    'district': post[2],
-                    'price': format_price(post[3]),
-                    'area': post[4],
-                    'bedrooms': post[5],
-                    'bathrooms': post[6],
-                    'posting_date': post[7],
-                    'status': 'Đã phê duyệt'
-                })
+        else:
+            # Regular users can only see their own approved posts
+            cur.execute("""
+                SELECT hp.house_id, hp."Title", hp."District", hp."Price", hp."Area", 
+                       hp."Bedrooms", hp."Bathrooms", hp."PostingDate", s.poster_id
+                FROM public.house_prices hp
+                JOIN public.statues s ON hp.house_id = s.house_id
+                WHERE s.poster_id = %s AND s.statue = 'Đang bán'
+                ORDER BY hp."PostingDate" DESC
+            """, (current_user_id,))
+        
+        approved_data = cur.fetchall()
+        
+        for post in approved_data:
+            approved_posts.append({
+                'house_id': post[0],
+                'title': post[1],
+                'district': post[2],
+                'price': format_price(post[3]),
+                'area': post[4],
+                'bedrooms': post[5],
+                'bathrooms': post[6],
+                'posting_date': post[7],
+                'poster_id': post[8],
+                'status': 'Đã phê duyệt'
+            })
         
         cur.close()
         conn.close()
         
         return render_template('my_posts.html', 
                              pending_posts=pending_posts, 
-                             approved_posts=approved_posts)
+                             approved_posts=approved_posts,
+                             is_admin=is_admin,
+                             current_user_id=current_user_id)
         
     except Exception as e:
         flash(f'Lỗi: {str(e)}', 'error')

@@ -455,19 +455,19 @@
 <div class="property-hero">
     <div class="container">
         <div class="row">
-            <div class="col-12">
-                <h1 class="hero-title">
+            <div class="col-12">                <h1 class="hero-title">
                     {{ property.title if property else house_prices['Title'] if house_prices else 'Chi tiết bất động sản' }}
                     {% if property and property.price %}
-                        <span class="price-highlight">{{ property.price }} tỷ</span>
+                        <span class="price-highlight">{{ property.price }}</span>
+                    {% elif house_prices and house_prices['Price'] %}
+                        <span class="price-highlight">{{ house_prices['Price'] }}</span>
                     {% endif %}
                 </h1>
                 <p class="hero-subtitle">
                     <i class="fas fa-map-marker-alt me-2"></i>
                     {{ property.district if property else 'Thông tin chi tiết' }}
-                </p>
-                <div class="hero-actions">
-                    {% if session.get('user_id') %}
+                </p>                <div class="hero-actions">
+                    {% if session.get('user_id') and not session.get('is_admin') %}
                     <form action="{{ url_for('add_favorite', house_id=property.house_id if property else house_prices['house_id']) }}" method="POST" class="d-inline">
                         <button type="submit" class="hero-btn hero-btn-primary">
                             <i class="fas fa-heart"></i> Yêu thích
@@ -501,7 +501,7 @@
                             <table class="table info-table">
                                 <tr><th><i class="fas fa-hashtag me-2"></i>ID</th><td>{{ property.house_id }}</td></tr>
                                 <tr><th><i class="fas fa-map-marker-alt me-2"></i>Quận/Huyện</th><td>{{ property.district }}</td></tr>
-                                <tr><th><i class="fas fa-dollar-sign me-2"></i>Giá</th><td><strong>{{ property.price }} tỷ</strong></td></tr>
+                                <tr><th><i class="fas fa-dollar-sign me-2"></i>Giá</th><td><strong>{{ property.price }}</strong></td></tr>
                                 <tr><th><i class="fas fa-expand-arrows-alt me-2"></i>Diện tích</th><td>{{ property.area }} m²</td></tr>
                                 <tr><th><i class="fas fa-bed me-2"></i>Phòng ngủ</th><td>{{ property.bedrooms }}</td></tr>
                                 <tr><th><i class="fas fa-bath me-2"></i>Phòng tắm</th><td>{{ property.bathrooms }}</td></tr>
@@ -511,12 +511,17 @@
                         
                         {% if house_prices %}
                         <div class="info-section">
-                            <h5><i class="fas fa-chart-line"></i>Thông tin chi tiết</h5>
-                            <table class="table info-table">
+                            <h5><i class="fas fa-chart-line"></i>Thông tin chi tiết</h5>                            <table class="table info-table">
                                 {% for key, value in house_prices.items() %}
                                 <tr>
                                     <th>{{ key }}</th>
-                                    <td>{{ value }}</td>
+                                    <td>
+                                        {% if key == 'Price' %}
+                                            <strong class="text-success">{{ value }}</strong>
+                                        {% else %}
+                                            {{ value }}
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </table>
@@ -531,9 +536,8 @@
                     </div>
                     {% endif %}
 
-                    <div class="action-buttons">
-                        <div class="d-flex gap-3 flex-wrap">
-                            {% if session.get('user_id') %}
+                    <div class="action-buttons">                        <div class="d-flex gap-3 flex-wrap">
+                            {% if session.get('user_id') and not session.get('is_admin') %}
                             <a href="{{ url_for('compare') }}?house_id1={{ property.house_id if property else house_prices['house_id'] }}" class="btn-custom btn-compare">
                                 <i class="fas fa-exchange-alt"></i> So sánh
                             </a>

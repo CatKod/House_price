@@ -25,6 +25,7 @@
         .navbar {
             background: var(--primary-gradient) !important;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
         
@@ -57,6 +58,7 @@
             box-shadow: var(--card-shadow);
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             background: rgba(255,255,255,0.95);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
         
@@ -174,6 +176,7 @@
         .alert {
             border: none;
             border-radius: 15px;
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }
@@ -228,8 +231,9 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">House Price</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
+                <span class="visually-hidden">Toggle navigation</span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
@@ -238,16 +242,18 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('search') }}">Tìm kiếm</a>
-                    </li>
-                    {% if session.get('user_id') %}
+                    </li>                    {% if session.get('user_id') %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('predict') }}">Dự đoán giá</a>
                     </li>
+                    {% if not session.get('is_admin') %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('compare') }}">So sánh</a>
-                    </li>                    <li class="nav-item">
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('favorites') }}">Yêu thích</a>
                     </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('post_house') }}">
                             <i class="fas fa-plus"></i> Đăng tin
@@ -300,7 +306,7 @@
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }} alert-dismissible fade show">
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" title="Đóng thông báo" aria-label="Đóng"></button>
                     </div>
                 {% endfor %}
             {% endif %}

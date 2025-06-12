@@ -78,18 +78,36 @@
                                 <div class="form-floating">
                                     <select class="form-select form-select-lg" id="district" name="district" required>
                                         <option value="">Chọn quận/huyện</option>
-                                        <option value="Ba Đình">Ba Đình</option>
-                                        <option value="Hoàn Kiếm">Hoàn Kiếm</option>
-                                        <option value="Tây Hồ">Tây Hồ</option>
-                                        <option value="Long Biên">Long Biên</option>
-                                        <option value="Cầu Giấy">Cầu Giấy</option>
-                                        <option value="Đống Đa">Đống Đa</option>
-                                        <option value="Hai Bà Trưng">Hai Bà Trưng</option>
-                                        <option value="Hoàng Mai">Hoàng Mai</option>
-                                        <option value="Thanh Xuân">Thanh Xuân</option>
-                                        <option value="Nam Từ Liêm">Nam Từ Liêm</option>
-                                        <option value="Bắc Từ Liêm">Bắc Từ Liêm</option>
-                                        <option value="Hà Đông">Hà Đông</option>
+                                        <option value="Ba Đình" {% if selected_district == 'Ba Đình' %}selected{% endif %}>Ba Đình</option>
+                                        <option value="Cầu Giấy" {% if selected_district == 'Cầu Giấy' %}selected{% endif %}>Cầu Giấy</option>
+                                        <option value="Hoàn Kiếm" {% if selected_district == 'Hoàn Kiếm' %}selected{% endif %}>Hoàn Kiếm</option>
+                                        <option value="Hai Bà Trưng" {% if selected_district == 'Hai Bà Trưng' %}selected{% endif %}>Hai Bà Trưng</option>
+                                        <option value="Hoàng Mai" {% if selected_district == 'Hoàng Mai' %}selected{% endif %}>Hoàng Mai</option>
+                                        <option value="Đống Đa" {% if selected_district == 'Đống Đa' %}selected{% endif %}>Đống Đa</option>
+                                        <option value="Hà Đông" {% if selected_district == 'Hà Đông' %}selected{% endif %}>Hà Đông</option>
+                                        <option value="Tây Hồ" {% if selected_district == 'Tây Hồ' %}selected{% endif %}>Tây Hồ</option>
+                                        <option value="Long Biên" {% if selected_district == 'Long Biên' %}selected{% endif %}>Long Biên</option>
+                                        <option value="Nam Từ Liêm" {% if selected_district == 'Nam Từ Liêm' %}selected{% endif %}>Nam Từ Liêm</option>
+                                        <option value="Thanh Xuân" {% if selected_district == 'Thanh Xuân' %}selected{% endif %}>Thanh Xuân</option>
+                                        <option value="Đông Anh" {% if selected_district == 'Đông Anh' %}selected{% endif %}>Đông Anh</option>
+                                        <option value="Sóc Sơn" {% if selected_district == 'Sóc Sơn' %}selected{% endif %}>Sóc Sơn</option>
+                                        <option value="Gia Lâm" {% if selected_district == 'Gia Lâm' %}selected{% endif %}>Gia Lâm</option>
+                                        <option value="Thanh Trì" {% if selected_district == 'Thanh Trì' %}selected{% endif %}>Thanh Trì</option>
+                                        <option value="Mê Linh" {% if selected_district == 'Mê Linh' %}selected{% endif %}>Mê Linh</option>
+                                        <option value="Sơn Tây" {% if selected_district == 'Sơn Tây' %}selected{% endif %}>Sơn Tây</option>
+                                        <option value="Bắc Từ Liêm" {% if selected_district == 'Bắc Từ Liêm' %}selected{% endif %}>Bắc Từ Liêm</option>
+                                        <option value="Chương Mỹ" {% if selected_district == 'Chương Mỹ' %}selected{% endif %}>Chương Mỹ</option>
+                                        <option value="Ba Vì" {% if selected_district == 'Ba Vì' %}selected{% endif %}>Ba Vì</option>
+                                        <option value="Đan Phượng" {% if selected_district == 'Đan Phượng' %}selected{% endif %}>Đan Phượng</option>
+                                        <option value="Hoài Đức" {% if selected_district == 'Hoài Đức' %}selected{% endif %}>Hoài Đức</option>
+                                        <option value="Quốc Oai" {% if selected_district == 'Quốc Oai' %}selected{% endif %}>Quốc Oai</option>
+                                        <option value="Thạch Thất" {% if selected_district == 'Thạch Thất' %}selected{% endif %}>Thạch Thất</option>
+                                        <option value="Phúc Thọ" {% if selected_district == 'Phúc Thọ' %}selected{% endif %}>Phúc Thọ</option>
+                                        <option value="Thanh Oai" {% if selected_district == 'Thanh Oai' %}selected{% endif %}>Thanh Oai</option>
+                                        <option value="Ứng Hòa" {% if selected_district == 'Ứng Hòa' %}selected{% endif %}>Ứng Hòa</option>
+                                        <option value="Thường Tín" {% if selected_district == 'Thường Tín' %}selected{% endif %}>Thường Tín</option>
+                                        <option value="Phú Xuyên" {% if selected_district == 'Phú Xuyên' %}selected{% endif %}>Phú Xuyên</option>
+                                        <option value="Mỹ Đức" {% if selected_district == 'Mỹ Đức' %}selected{% endif %}>Mỹ Đức</option>
                                     </select>
                                     <label for="district">
                                         <i class="fas fa-building me-1"></i>

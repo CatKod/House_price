@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros.html" import pagination %}
 
 {% block title %}Trang chủ{% endblock %}
 
@@ -97,9 +98,8 @@
                             <a href="{{ url_for('deposit', house_id=property.house_id) }}" 
                                class="btn btn-warning btn-deposit">
                                 <i class="fas fa-hand-holding-usd me-2"></i>Đặt cọc
-                            </a>
-                            {% endif %}
-                            {% if session.get('user_id') %}
+                            </a>                            {% endif %}
+                            {% if session.get('user_id') and not session.get('is_admin') %}
                             <form action="{{ url_for('add_favorite', house_id=property.house_id) }}" 
                                   method="POST" class="favorite-form">
                                 <button type="submit" class="btn btn-outline-danger btn-favorite" 
@@ -110,35 +110,10 @@
                             {% endif %}
                         </div>
                     </div>
-                </div>                {% endfor %}
-            </div>
+                </div>                {% endfor %}            </div>
             
             <!-- Enhanced Pagination -->
-            <nav aria-label="Page navigation" class="mt-5">
-                <ul class="pagination pagination-modern justify-content-center">
-                    {% if current_page > 1 %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('index', page=current_page-1, per_page=per_page) }}">
-                            <i class="fas fa-chevron-left me-1"></i>Trước
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    {% for i in range(1, total_pages + 1) %}
-                    <li class="page-item {% if i == current_page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('index', page=i, per_page=per_page) }}">{{ i }}</a>
-                    </li>
-                    {% endfor %}
-
-                    {% if current_page < total_pages %}
-                    <li class="page-item">
-                        <a class="page-link" href="{{ url_for('index', page=current_page+1, per_page=per_page) }}">
-                            Sau<i class="fas fa-chevron-right ms-1"></i>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
+            {{ pagination(current_page, total_pages, 'index', per_page=per_page) }}
         {% else %}
             <div class="empty-state">
                 <div class="empty-icon">
