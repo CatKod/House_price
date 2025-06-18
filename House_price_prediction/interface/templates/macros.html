@@ -105,7 +105,7 @@
 {% endmacro %}
 
 {# Enhanced Macro for pagination with ellipsis, first/last buttons, and page input #}
-{% macro pagination(page, total_pages, endpoint, q='', per_page='', district='', price_min='', price_max='', area_min='', area_max='', bedrooms='') %}
+{% macro pagination(page, total_pages, endpoint, q='', per_page='', district='', price_min='', price_max='', area_min='', area_max='', bedrooms='', sort_by='') %}
 {% set params = {} %}
 {% if q %}{% set _ = params.update({'q': q}) %}{% endif %}
 {% if per_page %}{% set _ = params.update({'per_page': per_page}) %}{% endif %}
@@ -115,6 +115,7 @@
 {% if area_min %}{% set _ = params.update({'area_min': area_min}) %}{% endif %}
 {% if area_max %}{% set _ = params.update({'area_max': area_max}) %}{% endif %}
 {% if bedrooms %}{% set _ = params.update({'bedrooms': bedrooms}) %}{% endif %}
+{% if sort_by %}{% set _ = params.update({'sort_by': sort_by}) %}{% endif %}
 
 {% if total_pages > 1 %}
 <div class="pagination-container">

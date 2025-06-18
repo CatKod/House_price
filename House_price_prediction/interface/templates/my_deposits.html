@@ -3,49 +3,485 @@
 {% block title %}Bất động sản đã đặt cọc{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>Bất động sản bạn đang đặt cọc</h1>
+<!-- Modern Header Section -->
+<div class="deposits-header mb-5">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1 class="deposits-title">
+                <i class="fas fa-hand-holding-usd me-3"></i>
+                Bất động sản đã đặt cọc
+            </h1>
+            <p class="deposits-subtitle">Quản lý các bất động sản bạn đang trong quá trình mua</p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <div class="deposits-stats">
+                {% if properties %}
+                <div class="stat-card">
+                    <span class="stat-number">{{ properties|length }}</span>
+                    <span class="stat-label">bất động sản</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
-<div class="row">
-    <div class="col">
-        {% if properties %}
-        <table class="table table-bordered table-hover">
-            <thead class="table-primary">
-                <tr>
-                    <th>ID</th>
-                    <th>Tiêu đề</th>
-                    <th>Quận/Huyện</th>
-                    <th>Giá</th>
-                    <th>Diện tích</th>
-                    <th>Phòng ngủ</th>
-                    <th>Phòng tắm</th>
-                    <th>Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in properties %}
-                <tr>
-                    <td>{{ p[0] }}</td>
-                    <td>{{ p[1] }}</td>
-                    <td>{{ p[2] }}</td>
-                    <td>{{ p[3] }}</td>
-                    <td>{{ p[4] }}</td>
-                    <td>{{ p[5] }}</td>
-                    <td>{{ p[6] }}</td>
-                    <td>
-                        <form action="{{ url_for('cancel_deposit', house_id=p[0]) }}" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn chắc chắn muốn hủy đặt cọc?')">Hủy</button>
+
+<!-- Main Content -->
+<div class="deposits-content">
+    {% if properties %}
+        <div class="deposits-grid">
+            {% for p in properties %}
+            <div class="deposit-card">
+                <div class="deposit-card-header">
+                    <div class="property-badge">
+                        <i class="fas fa-home"></i>
+                        <span>{{ p[0] }}</span>
+                    </div>
+                    <div class="status-badge processing">
+                        <i class="fas fa-clock"></i>
+                        <span>Đang xử lý</span>
+                    </div>
+                </div>
+                
+                <div class="deposit-card-body">
+                    <h5 class="property-title">{{ p[1] }}</h5>
+                    
+                    <div class="property-location mb-3">
+                        <i class="fas fa-map-marker-alt text-muted me-2"></i>
+                        <span class="text-muted">{{ p[2] }}</span>
+                    </div>
+                    
+                    <div class="property-price mb-3">
+                        <i class="fas fa-money-bill-wave text-success me-2"></i>
+                        <span class="price-value">{{ p[3] }}</span>
+                    </div>
+                    
+                    <div class="property-details-grid">
+                        <div class="detail-item">
+                            <i class="fas fa-ruler-combined text-info"></i>
+                            <span>{{ p[4] }} m²</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-bed text-primary"></i>
+                            <span>{{ p[5] }} PN</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-bath text-info"></i>
+                            <span>{{ p[6] }} PT</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="deposit-card-footer">
+                    <div class="deposit-actions">
+                        <a href="{{ url_for('property_details', house_id=p[0]) }}" 
+                           class="btn btn-outline-primary btn-action">
+                            <i class="fas fa-eye me-2"></i>
+                            Xem chi tiết
+                        </a>
+                        <form action="{{ url_for('cancel_deposit', house_id=p[0]) }}" 
+                              method="POST" class="cancel-form">
+                            <button type="submit" 
+                                    class="btn btn-outline-danger btn-action" 
+                                    onclick="return confirm('⚠️ Bạn chắc chắn muốn hủy đặt cọc?\n\nViệc hủy đặt cọc sẽ làm bất động sản này trở lại trạng thái bán.')">
+                                <i class="fas fa-times me-2"></i>
+                                Hủy đặt cọc
+                            </button>
                         </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="alert alert-info">Bạn chưa đặt cọc bất động sản nào.</div>
-        {% endif %}
-    </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-hand-holding-usd"></i>
+            </div>
+            <h4 class="empty-title">Chưa có bất động sản nào</h4>
+            <p class="empty-description">
+                Bạn chưa đặt cọc bất động sản nào. Hãy khám phá và tìm kiếm những bất động sản phù hợp với nhu cầu của bạn.
+            </p>
+            <div class="empty-actions">
+                <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-search me-2"></i>
+                    Tìm kiếm bất động sản
+                </a>
+                <a href="{{ url_for('search') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-filter me-2"></i>
+                    Tìm kiếm nâng cao
+                </a>
+            </div>
+        </div>
+    {% endif %}
 </div>
+
+<style>
+/* Header Styles */
+.deposits-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 3rem 2rem;
+    border-radius: 20px;
+    color: white;
+    margin: -1rem -15px 2rem -15px;
+    position: relative;
+    overflow: hidden;
+}
+
+.deposits-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: translate(100px, -100px);
+}
+
+.deposits-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.deposits-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.stat-number {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Grid Layout */
+.deposits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+/* Deposit Card Styles */
+.deposit-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid #e3e6f0;
+}
+
+.deposit-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.deposit-card-header {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9ff, #e3e6f0);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.property-badge {
+    background: #667eea;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.processing {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.deposit-card-body {
+    padding: 1.5rem;
+}
+
+.property-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.property-location {
+    font-size: 1rem;
+}
+
+.property-price {
+    font-size: 1.1rem;
+}
+
+.price-value {
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: #27ae60;
+}
+
+.property-details-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.deposit-card-footer {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-top: 1px solid #e3e6f0;
+}
+
+.deposit-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    flex: 1;
+    min-width: 140px;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    text-align: center;
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.cancel-form {
+    flex: 1;
+    display: flex;
+}
+
+.cancel-form .btn-action {
+    width: 100%;
+    border: none;
+    background: none;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.empty-icon {
+    font-size: 5rem;
+    color: #e9ecef;
+    margin-bottom: 2rem;
+}
+
+.empty-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.empty-description {
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.empty-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.empty-actions .btn {
+    min-width: 180px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .deposits-header {
+        padding: 2rem 1rem;
+        text-align: center;
+    }
+    
+    .deposits-title {
+        font-size: 2rem;
+    }
+    
+    .deposits-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .deposit-card-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .property-details-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .deposit-actions {
+        flex-direction: column;
+    }
+    
+    .empty-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .empty-actions .btn {
+        width: 100%;
+        max-width: 280px;
+    }
+}
+
+@media (max-width: 576px) {
+    .deposits-header {
+        margin: -1rem -10px 1.5rem -10px;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+    
+    .empty-state {
+        padding: 3rem 1rem;
+    }
+    
+    .empty-icon {
+        font-size: 4rem;
+    }
+    
+    .empty-title {
+        font-size: 1.5rem;
+    }
+}
+
+/* Animation for cards */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.deposit-card {
+    animation: slideInUp 0.6s ease-out;
+}
+
+.deposit-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.deposit-card:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.deposit-card:nth-child(4) {
+    animation-delay: 0.3s;
+}
+</style>
+
+<script>
+// Add loading state to action buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Add loading state to cancel buttons
+    document.querySelectorAll('.cancel-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const button = this.querySelector('button');
+            if (confirm(button.getAttribute('onclick').match(/'([^']+)'/)[1])) {
+                button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang hủy...';
+                button.disabled = true;
+            } else {
+                e.preventDefault();
+            }
+        });
+    });
+    
+    // Add tooltip initialization if needed
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
 {% endblock %}
