@@ -84,7 +84,7 @@ def index():
                 'bathrooms': prop[6]
             })
 
-        # Lấy thống kê theo quận/huyện (chỉ tính các căn đang bán)
+        # Lấy thống kê theo quận/huyện
         cur.execute("""
             SELECT p.district, COUNT(*) as count
             FROM public.property p
@@ -96,7 +96,7 @@ def index():
         """)
         district_stats = cur.fetchall()
 
-        # Lấy giá trung bình theo quận/huyện (chỉ tính các căn đang bán)
+        # Lấy giá trung bình theo quận/huyện
         cur.execute("""
             SELECT p.district, AVG(p.price::numeric) as avg_price
             FROM public.property p
@@ -246,7 +246,7 @@ def search():
         cur = conn.cursor()
 
         # Build dynamic WHERE clause
-        where_clauses = ['s.statue = %s']  # Always filter by "Đang bán" status
+        where_clauses = ['s.statue = %s']
         params = ['Đang bán']
         
         if search_term:
