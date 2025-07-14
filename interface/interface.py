@@ -84,7 +84,7 @@ def index():
                 'bathrooms': prop[6]
             })
 
-        # Lấy thống kê theo quận/huyện (chỉ tính các căn đang bán)
+        # Lấy thống kê theo quận/huyện
         cur.execute("""
             SELECT p.district, COUNT(*) as count
             FROM public.property p
@@ -96,7 +96,7 @@ def index():
         """)
         district_stats = cur.fetchall()
 
-        # Lấy giá trung bình theo quận/huyện (chỉ tính các căn đang bán)
+        # Lấy giá trung bình theo quận/huyện
         cur.execute("""
             SELECT p.district, AVG(p.price::numeric) as avg_price
             FROM public.property p
@@ -237,6 +237,7 @@ def search():
         area_min = request.args.get('area_min', '')
         area_max = request.args.get('area_max', '')
         bedrooms = request.args.get('bedrooms', '')
+        sort_by = request.args.get('sort_by', 'house_id')
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         offset = (page - 1) * per_page
@@ -245,46 +246,59 @@ def search():
         cur = conn.cursor()
 
         # Build dynamic WHERE clause
-        where_clauses = []
-        params = []
+        where_clauses = ['s.statue = %s']
+        params = ['Đang bán']
+        
         if search_term:
-            where_clauses.append('(title ILIKE %s OR district ILIKE %s OR house_id ILIKE %s)')
+            where_clauses.append('(p.title ILIKE %s OR p.district ILIKE %s OR p.house_id ILIKE %s)')
             params.extend([f'%{search_term}%'] * 3)
         if district:
-            where_clauses.append('district = %s')
+            where_clauses.append('p.district = %s')
             params.append(district)
         if price_min:
-            where_clauses.append("price ~ '^[0-9]+(\\.[0-9]+)?$' AND price::numeric >= %s")
+            where_clauses.append("p.price ~ '^[0-9]+(\\.[0-9]+)?$' AND p.price::numeric >= %s")
             params.append(float(price_min) * 1e9)
         if price_max:
-            where_clauses.append("price ~ '^[0-9]+(\\.[0-9]+)?$' AND price::numeric <= %s")
+            where_clauses.append("p.price ~ '^[0-9]+(\\.[0-9]+)?$' AND p.price::numeric <= %s")
             params.append(float(price_max) * 1e9)
         if area_min:
-            where_clauses.append('area >= %s')
+            where_clauses.append('p.area >= %s')
             params.append(float(area_min))
         if area_max:
-            where_clauses.append('area <= %s')
+            where_clauses.append('p.area <= %s')
             params.append(float(area_max))
         if bedrooms:
-            where_clauses.append('bedrooms >= %s')
+            where_clauses.append('p.bedrooms >= %s')
             params.append(int(bedrooms))
 
-        where_sql = ' AND '.join(where_clauses)
-        if where_sql:
-            where_sql = 'WHERE ' + where_sql
+        where_sql = 'WHERE ' + ' AND '.join(where_clauses)
+        order_by_clauses = {
+            'house_id': 'ORDER BY p.house_id ASC',
+            'newest': 'ORDER BY p.house_id DESC',
+            'price_low': 'ORDER BY CASE WHEN p.price ~ \'^[0-9]+(\\.[0-9]+)?$\' THEN p.price::numeric ELSE 999999999999 END ASC',
+            'price_high': 'ORDER BY CASE WHEN p.price ~ \'^[0-9]+(\\.[0-9]+)?$\' THEN p.price::numeric ELSE 0 END DESC',
+            'area_large': 'ORDER BY p.area DESC'
+        }
+        order_by_sql = order_by_clauses.get(sort_by, order_by_clauses['house_id'])
 
         # Get total count
-        count_sql = f"SELECT COUNT(*) FROM public.property {where_sql}"
+        count_sql = f"""
+            SELECT COUNT(*) 
+            FROM public.property p
+            JOIN public.statues s ON p.house_id = s.house_id
+            {where_sql}
+        """
         cur.execute(count_sql, params)
         total_properties = cur.fetchone()[0]
         total_pages = (total_properties + per_page - 1) // per_page
 
         # Get search results
         search_sql = f"""
-            SELECT house_id, title, district, price, area, bedrooms, bathrooms
-            FROM public.property
+            SELECT *
+            FROM public.property p
+            JOIN public.statues s ON p.house_id = s.house_id
             {where_sql}
-            ORDER BY house_id
+            {order_by_sql}
             LIMIT %s OFFSET %s
         """
         cur.execute(search_sql, params + [per_page, offset])
@@ -301,8 +315,16 @@ def search():
                 'area': prop[4],
                 'bedrooms': prop[5],
                 'bathrooms': prop[6]
-            })        # Lấy danh sách quận/huyện cho dropdown
-        cur.execute('SELECT DISTINCT district FROM public.property ORDER BY district')
+            })
+
+        # Lấy danh sách quận/huyện cho dropdown (chỉ các quận có bất động sản đang bán)
+        cur.execute("""
+            SELECT DISTINCT p.district 
+            FROM public.property p
+            JOIN public.statues s ON p.house_id = s.house_id
+            WHERE s.statue = 'Đang bán'
+            ORDER BY p.district
+        """)
         districts = [row[0] for row in cur.fetchall()]
 
         cur.close()
@@ -321,7 +343,8 @@ def search():
                              price_max=price_max,
                              area_min=area_min,
                              area_max=area_max,
-                             bedrooms=bedrooms)
+                             bedrooms=bedrooms,
+                             sort_by=sort_by)
 
     except Exception as e:
         flash(f'Error: {str(e)}', 'error')
@@ -368,8 +391,7 @@ def predict():
 
 @app.route('/compare', methods=['GET', 'POST'])
 @login_required
-def compare():
-    # Redirect admin users away from compare functionality
+def compare():    # Redirect admin users away from compare functionality
     if session.get('is_admin'):
         flash('Chức năng so sánh không khả dụng cho admin.', 'info')
         return redirect(url_for('index'))
@@ -383,17 +405,18 @@ def compare():
             cur = conn.cursor()
 
             cur.execute("""
-                SELECT house_id, "Title", "Address", "District", "PostingDate", "PostType", 
-                       "Price", "Area", "Direction", "Bedrooms", "Bathrooms", "Floors", 
-                       "Width_meters", "Legal", "Interior", "Entrancewidth"
-                FROM public.house_prices
-                WHERE house_id = %s OR house_id = %s
+                SELECT *
+                FROM public.house_prices hp
+                JOIN public.statues s ON hp.house_id = s.house_id
+                WHERE (hp.house_id = %s OR hp.house_id = %s) AND s.statue = 'Đang bán'
             """, (house_id1, house_id2))
             properties = cur.fetchall()
 
             if len(properties) != 2:
                 flash('One or both properties not found', 'error')
-                return redirect(url_for('compare'))            # Format properties
+                return redirect(url_for('compare'))
+            
+            # Format properties
             formatted_properties = []
             for prop in properties:
                 # Convert price string to float for comparison
@@ -684,7 +707,20 @@ def my_deposits():
             WHERE s.statue = 'Đang xử lý' AND d.user_id = %s
             ORDER BY p.house_id
         """, (session['user_id'],))
-        properties = cur.fetchall()
+        properties_raw = cur.fetchall()
+        
+        properties = []
+        for prop in properties_raw:
+            properties.append((
+                prop[0],
+                prop[1],
+                prop[2],
+                format_price(prop[3]),
+                prop[4], 
+                prop[5],
+                prop[6]
+            ))
+        
         cur.close()
         conn.close()
         return render_template('my_deposits.html', properties=properties)
@@ -756,13 +792,17 @@ def admin_cancel_processing(house_id):
 def post_house():
     """Route for posting house listings - both admin and user"""
     if request.method == 'POST':
-        try:
-            # Extract form data
+        try:            # Extract form data
             title = request.form['title']
             address = request.form['address']
             district = request.form['district']
             post_type = request.form['post_type']
             price = request.form['price']
+            
+            # Remove commas from price if it's a number (not "Thỏa thuận")
+            if price not in ['Thỏa thuận', 'Thoả thuận']:
+                price = price.replace(',', '')
+            
             area = float(request.form['area'])
             direction = request.form.get('direction', '')
             bedrooms = int(request.form['bedrooms'])

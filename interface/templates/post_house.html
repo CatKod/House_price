@@ -415,13 +415,38 @@
 // Auto-format price input with thousand separators
 document.getElementById('price').addEventListener('input', function(e) {
     let value = e.target.value;
-    if (!isNaN(value) && value !== '' && value !== 'Thỏa thuận' && value !== 'Thoả thuận') {
-        // Remove existing formatting
-        let numericValue = value.replace(/,/g, '');
-        if (!isNaN(numericValue)) {
-            // Format with thousand separators
-            let formatted = parseInt(numericValue).toLocaleString('vi-VN');
+    
+    // Skip formatting for "Thỏa thuận"
+    if (value === 'Thỏa thuận' || value === 'Thoả thuận') {
+        return;
+    }
+    
+    // Remove existing formatting (both commas and dots used as thousand separators)
+    let numericValue = value.replace(/[,.]/g, '');
+    
+    // Check if the result is a valid number
+    if (numericValue !== '' && !isNaN(numericValue) && numericValue.match(/^\d+$/)) {
+        // Store cursor position before formatting
+        let cursorPos = e.target.selectionStart;
+        let oldLength = value.length;
+        
+        // Format with thousand separators
+        let formatted = Number(numericValue).toLocaleString('vi-VN');
+        
+        // Only update if the formatted value is different to avoid infinite loops
+        if (formatted !== value) {
             e.target.value = formatted;
+            
+            // Restore cursor position, adjusting for new length
+            let newLength = formatted.length;
+            let newCursorPos = cursorPos + (newLength - oldLength);
+            
+            // Ensure cursor position is within bounds
+            if (newCursorPos < 0) newCursorPos = 0;
+            if (newCursorPos > newLength) newCursorPos = newLength;
+            
+            // Set cursor position
+            e.target.setSelectionRange(newCursorPos, newCursorPos);
         }
     }
 });
@@ -451,8 +476,8 @@ document.querySelector('form').addEventListener('submit', function(e) {
     
     // Validate price
     if (price !== 'Thỏa thuận' && price !== 'Thoả thuận') {
-        let numericPrice = price.replace(/,/g, '');
-        if (isNaN(numericPrice) || parseFloat(numericPrice) <= 0) {
+        let numericPrice = price.replace(/[,.\s]/g, ''); // Remove commas, dots, and spaces
+        if (numericPrice === '' || isNaN(Number(numericPrice)) || Number(numericPrice) <= 0) {
             alert('⚠️ Vui lòng nhập giá hợp lệ hoặc "Thỏa thuận"');
             e.preventDefault();
             return;

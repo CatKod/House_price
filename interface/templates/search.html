@@ -172,14 +172,13 @@
                             Tìm thấy <strong>{{ total_properties }}</strong> bất động sản 
                             {% if search_term %}cho từ khóa "<strong>{{ search_term }}</strong>"{% endif %}
                         </p>
-                    </div>
-                    <div class="sort-options">
-                        <label for="sort-select" class="visually-hidden">Sắp xếp kết quả</label>
-                        <select id="sort-select" class="form-select form-select-sm" onchange="sortResults(this.value)" aria-label="Sắp xếp kết quả">
-                            <option value="newest">Mới nhất</option>
-                            <option value="price_low">Giá thấp đến cao</option>
-                            <option value="price_high">Giá cao đến thấp</option>
-                            <option value="area_large">Diện tích lớn nhất</option>
+                    </div>                    <div class="sort-options">
+                        <label for="sort-select" class="visually-hidden">Sắp xếp kết quả</label>                        <select id="sort-select" class="form-select form-select-sm" onchange="sortResults(this.value)" aria-label="Sắp xếp kết quả">
+                            <option value="house_id" {% if sort_by == 'house_id' or not sort_by %}selected{% endif %}>Mặc định</option>
+                            <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Mới nhất</option>
+                            <option value="price_low" {% if sort_by == 'price_low' %}selected{% endif %}>Giá thấp đến cao</option>
+                            <option value="price_high" {% if sort_by == 'price_high' %}selected{% endif %}>Giá cao đến thấp</option>
+                            <option value="area_large" {% if sort_by == 'area_large' %}selected{% endif %}>Diện tích lớn nhất</option>
                         </select>
                     </div>
                 </div>
@@ -309,8 +308,7 @@
                         </div>
                     </div>
                 </div>
-                {% endfor %}            </div>
-              <!-- Enhanced Pagination -->
+                {% endfor %}            </div>            <!-- Enhanced Pagination -->
             {{ pagination(current_page, total_pages, 'search', 
                          q=search_term, 
                          per_page=per_page,
@@ -319,7 +317,8 @@
                          price_max=price_max,
                          area_min=area_min,
                          area_max=area_max,
-                         bedrooms=bedrooms) }}
+                         bedrooms=bedrooms,
+                         sort_by=sort_by) }}
         {% else %}
             <!-- No Results State -->
             <div class="no-results-state">
@@ -858,9 +857,13 @@
 
 <script>
 function sortResults(sortBy) {
-    // Add sorting functionality here
-    console.log('Sorting by:', sortBy);
-    // This would typically involve AJAX or form submission
+    // Get current URL and update sort_by parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('sort_by', sortBy);
+    urlParams.set('page', '1'); // Reset to first page when sorting changes
+    
+    // Redirect to updated URL
+    window.location.href = window.location.pathname + '?' + urlParams.toString();
 }
 
 // Add search form enhancements
