@@ -1,5 +1,15 @@
 import models.predict_house_price
 
+"""
+Install dependencies: pip install -r requirements.txt
+
+Run ML model training and demonstration: python main.py
+
+Start the web application: python main.py web
+
+Run only ML training: python main.py train
+"""
+
 def main():
     """
     Main function to demonstrate the machine learning model functionality.
